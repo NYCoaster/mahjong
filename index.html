@@ -3,203 +3,207 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mahjong: Taiwan Square</title>
+    <title>Mahjong v15: Fixed Layout</title>
     <style>
         :root {
-            --felt: #145238;
+            --felt: #104a30;
             --wood: #5d4037;
-            --tile: #fdfdfd;
-            --back: #004d40;
+            --tile-face: #f8f8f8;
+            --tile-back: #006064;
         }
 
         body {
-            margin: 0; background: #111; height: 100vh;
+            margin: 0; background: #121212; height: 100vh;
             display: flex; justify-content: center; align-items: center;
-            font-family: sans-serif; overflow: hidden; user-select: none;
+            font-family: 'Segoe UI', sans-serif; overflow: hidden; user-select: none;
         }
 
-        /* --- THE SQUARE TABLE --- */
-        #table-container {
-            width: 95vmin; height: 95vmin; /* Strict Square */
+        /* --- THE TABLE (Strict Square) --- */
+        #table {
+            width: 96vmin; height: 96vmin;
             background: var(--felt);
-            border: 15px solid var(--wood);
-            border-radius: 30px;
+            border: 12px solid var(--wood);
+            border-radius: 24px;
             position: relative;
-            box-shadow: 0 0 50px rgba(0,0,0,0.5);
-            display: flex; justify-content: center; align-items: center;
+            box-shadow: 0 0 60px rgba(0,0,0,0.6);
         }
-
-        /* --- CENTER FIELD (Discards) --- */
-        #center-zone {
-            width: 40%; height: 40%;
-            border: 2px solid rgba(0,0,0,0.2);
-            border-radius: 10px;
-            display: grid; grid-template-columns: repeat(8, 1fr);
-            gap: 2px; padding: 5px;
-            background: rgba(0,0,0,0.1);
-        }
-        .discard-tile {
-            width: 100%; height: 100%; background: var(--tile);
-            border-radius: 2px; display: flex; justify-content: center; align-items: center;
-        }
-        .discard-tile svg { width: 80%; height: 80%; }
-
-        /* --- PLAYER ZONES --- */
-        .hand-area {
-            position: absolute; display: flex; gap: 2px;
-            justify-content: center; align-items: flex-end;
-        }
-
-        /* P0: Bottom */
-        #p0 {
-            bottom: 8%; left: 50%; transform: translateX(-50%);
-            width: 80%; height: 12%;
-        }
-        #p0 .tile { width: 5.5%; height: 100%; cursor: pointer; transition: margin 0.1s; }
-        #p0 .tile:hover { margin-bottom: 10px; }
-
-        /* P1: Right */
-        #p1 {
-            right: 5%; top: 50%; transform: translateY(-50%) rotate(-90deg);
-            width: 80%; height: 8%;
-        }
-
-        /* P2: Top */
-        #p2 {
-            top: 5%; left: 50%; transform: translateX(-50%) rotate(180deg);
-            width: 80%; height: 8%;
-        }
-
-        /* P3: Left */
-        #p3 {
-            left: 5%; top: 50%; transform: translateY(-50%) rotate(90deg);
-            width: 80%; height: 8%;
-        }
-
-        /* Bots use simplified tiles */
-        .bot-tile { width: 6%; height: 100%; background: var(--back); border: 1px solid rgba(255,255,255,0.2); border-radius: 2px; }
 
         /* --- TILE GRAPHICS --- */
         .tile {
-            background: var(--tile);
+            width: 45px; height: 60px; /* 3:4 Ratio (Standard) */
+            background: var(--tile-face);
             border-radius: 4px;
-            box-shadow: 2px 2px 5px rgba(0,0,0,0.4);
+            box-shadow: 2px 3px 4px rgba(0,0,0,0.3);
             display: flex; justify-content: center; align-items: center;
             position: relative;
+            transition: transform 0.1s;
+            cursor: pointer;
         }
-        .tile-face { width: 100%; height: 100%; }
+        .tile svg { width: 100%; height: 100%; display: block; }
+        
+        /* Back of Tile (Bots) */
+        .tile-back {
+            width: 45px; height: 60px;
+            background: var(--tile-back);
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 4px;
+            box-shadow: 1px 2px 3px rgba(0,0,0,0.3);
+        }
+        .tile-back::after {
+            content: ''; display: block; width: 30px; height: 45px;
+            border: 2px solid rgba(255,255,255,0.1); border-radius: 3px;
+            margin: 5px auto;
+        }
 
-        /* Special: Fresh Draw */
-        .fresh { margin-left: 15px !important; border-left: 2px solid gold; }
+        /* --- ZONES (Pinned to Edges) --- */
+        .zone {
+            position: absolute;
+            display: flex; gap: 2px;
+            justify-content: center; align-items: center;
+        }
+
+        /* PLAYER 0 (BOTTOM) */
+        #p0 {
+            bottom: 10px; left: 50%; transform: translateX(-50%);
+            z-index: 100;
+        }
+        #p0 .tile:hover { transform: translateY(-15px); border: 1px solid gold; }
+
+        /* PLAYER 1 (RIGHT) */
+        #p1 {
+            right: 10px; top: 50%; transform: translateY(-50%);
+            flex-direction: column-reverse;
+        }
+        #p1 .tile-back { width: 60px; height: 40px; } /* Rotated dimensions */
+
+        /* PLAYER 2 (TOP) */
+        #p2 {
+            top: 10px; left: 50%; transform: translateX(-50%);
+            flex-direction: row-reverse;
+        }
+
+        /* PLAYER 3 (LEFT) */
+        #p3 {
+            left: 10px; top: 50%; transform: translateY(-50%);
+            flex-direction: column;
+        }
+        #p3 .tile-back { width: 60px; height: 40px; }
+
+        /* --- DISCARD FIELD (Center) --- */
+        #center-field {
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 40%; height: 40%;
+            border: 2px dashed rgba(255,255,255,0.1);
+            border-radius: 12px;
+            display: grid; grid-template-columns: repeat(8, 1fr);
+            gap: 4px; padding: 10px;
+            align-content: center;
+        }
+        .discard {
+            width: 34px; height: 45px; /* Smaller discards */
+            background: #eee; border-radius: 3px;
+            display: flex; justify-content: center; align-items: center;
+        }
+        .discard svg { width: 100%; height: 100%; }
 
         /* --- UI OVERLAYS --- */
-        #hud {
-            position: absolute; top: 20px; left: 20px; color: white;
-            background: rgba(0,0,0,0.5); padding: 10px 20px; border-radius: 20px;
-        }
-
-        #actions {
-            position: absolute; top: 60%; left: 50%; transform: translate(-50%, -50%);
-            display: none; gap: 10px; z-index: 100;
+        #action-bar {
+            position: absolute; bottom: 120px; left: 50%; transform: translateX(-50%);
+            display: none; gap: 10px; z-index: 200;
         }
         .btn {
-            border: none; padding: 15px 30px; border-radius: 50px;
-            font-weight: bold; font-size: 18px; cursor: pointer;
-            box-shadow: 0 5px 10px rgba(0,0,0,0.3);
-            background: white; transition: 0.1s;
+            border: none; padding: 12px 24px; border-radius: 30px;
+            font-weight: bold; font-size: 16px; cursor: pointer;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.4);
+            transition: 0.1s;
         }
         .btn:active { transform: scale(0.95); }
-        .btn-win { background: #d32f2f; color: white; }
+        .btn-hu { background: #d32f2f; color: white; }
+        .btn-skip { background: #ddd; color: #333; }
 
         #msg {
-            position: absolute; inset: 0; background: rgba(0,0,0,0.85); z-index: 200;
-            display: none; flex-direction: column; align-items: center; justify-content: center;
-            color: gold; font-size: 4em; font-weight: bold;
+            position: absolute; inset: 0; background: rgba(0,0,0,0.85);
+            display: none; justify-content: center; align-items: center;
+            flex-direction: column; z-index: 500;
         }
+        h1 { color: gold; font-size: 5em; margin: 0; text-shadow: 0 0 20px orange; }
 
     </style>
 </head>
 <body>
 
-<div id="hud">
-    Tiles: <span id="deck-count">136</span>
-</div>
-
-<div id="table-container">
-    <!-- Center Discards -->
-    <div id="center-zone"></div>
+<div id="table">
+    <!-- Discards -->
+    <div id="center-field"></div>
 
     <!-- Players -->
-    <div id="p0" class="hand-area"></div>
-    <div id="p1" class="hand-area"></div>
-    <div id="p2" class="hand-area"></div>
-    <div id="p3" class="hand-area"></div>
+    <div id="p0" class="zone"></div>
+    <div id="p1" class="zone"></div>
+    <div id="p2" class="zone"></div>
+    <div id="p3" class="zone"></div>
 
-    <!-- Action Bar -->
-    <div id="actions">
-        <button class="btn btn-win" onclick="act('hu')">HU!</button>
-        <button class="btn" style="background:#ffd700" onclick="act('kong')">Kong</button>
-        <button class="btn" style="background:#00b0ff" onclick="act('pung')">Pung</button>
-        <button class="btn" style="background:#00e676" onclick="act('chow')">Chow</button>
-        <button class="btn" style="background:#ccc" onclick="act('skip')">Pass</button>
+    <!-- Actions -->
+    <div id="action-bar">
+        <button class="btn btn-hu" onclick="act('hu')">WIN</button>
+        <button class="btn" style="background:#fbc02d" onclick="act('kong')">KONG</button>
+        <button class="btn" style="background:#039be5;color:white" onclick="act('pung')">PUNG</button>
+        <button class="btn" style="background:#43a047;color:white" onclick="act('chow')">CHOW</button>
+        <button class="btn btn-skip" onclick="act('skip')">PASS</button>
     </div>
 </div>
 
 <div id="msg">
-    <div id="msg-txt">WINNER</div>
-    <button class="btn" style="margin-top:30px" onclick="location.reload()">Play Again</button>
+    <h1 id="msg-txt">VICTORY</h1>
+    <button class="btn" style="margin-top:20px" onclick="location.reload()">New Game</button>
 </div>
 
 <script>
-    /* --- AUTHENTIC SVG GENERATOR --- */
+    /* --- SVG ASSETS (Authentic) --- */
     const SVG = {
-        base: (c) => `<svg viewBox="0 0 100 130" width="100%" height="100%">${c}</svg>`,
+        base: (c) => `<svg viewBox="0 0 100 130">${c}</svg>`,
         circle: (x,y,r,c) => `<circle cx="${x}" cy="${y}" r="${r}" fill="${c}"/>`,
         rect: (x,y,w,h,c) => `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="${c}"/>`,
         
-        // Tile Render Logic
-        get: (type, val) => {
-            let g = '';
-            const R='#d00', G='#080', B='#009';
+        get: (t, v) => {
+            let g = ''; const R='#c00', G='#080', B='#009';
             
-            if(type==='dots') {
-                if(val==1) g = SVG.circle(50,65,35,R) + SVG.circle(50,65,20,'white') + SVG.circle(50,65,10,R);
-                else if(val==2) g = SVG.circle(50,35,18,G) + SVG.circle(50,95,18,B);
-                else if(val==3) g = SVG.circle(25,30,15,B) + SVG.circle(50,65,15,R) + SVG.circle(75,100,15,G);
-                else if(val==4) g = SVG.circle(30,30,15,B) + SVG.circle(70,30,15,G) + SVG.circle(30,100,15,G) + SVG.circle(70,100,15,B);
-                else if(val==5) g = SVG.circle(25,25,12,B) + SVG.circle(75,25,12,G) + SVG.circle(50,65,12,R) + SVG.circle(25,105,12,G) + SVG.circle(75,105,12,B);
-                else if(val==8) g = SVG.circle(30,25,12,B) + SVG.circle(70,25,12,B) + SVG.circle(30,50,12,B) + SVG.circle(70,50,12,B) + SVG.circle(30,75,12,B) + SVG.circle(70,75,12,B) + SVG.circle(30,100,12,B) + SVG.circle(70,100,12,B);
-                else g = `<text x="50" y="80" font-size="60" text-anchor="middle" fill="${B}" font-weight="bold">${val}</text>`; // Fallback for 6,7,9 to keep code small
+            if(t==='dots') {
+                if(v==1) g = SVG.circle(50,65,35,R)+SVG.circle(50,65,20,'white')+SVG.circle(50,65,10,R);
+                else if(v==2) g = SVG.circle(50,35,18,G)+SVG.circle(50,95,18,B);
+                else if(v==3) g = SVG.circle(25,30,15,B)+SVG.circle(50,65,15,R)+SVG.circle(75,100,15,G);
+                else if(v==5) g = SVG.circle(25,25,12,B)+SVG.circle(75,25,12,G)+SVG.circle(50,65,12,R)+SVG.circle(25,105,12,G)+SVG.circle(75,105,12,B);
+                else g = `<text x="50" y="85" font-size="60" text-anchor="middle" fill="${B}" font-weight="bold">${v}</text>`;
             }
-            else if(type==='bamboo') {
-                if(val==1) g = `<path d="M50,40 Q30,60 20,50 Q40,30 50,20 Q60,30 80,50 Q70,60 50,40 M50,60 L50,110 M30,90 L70,90" stroke="${G}" stroke-width="5" fill="none"/>`; // Abstract Bird
-                else g = `<rect x="30" y="20" width="10" height="90" fill="${G}"/><rect x="60" y="20" width="10" height="90" fill="${G}"/>`; // Simple sticks
+            else if(t==='bamboo') {
+                if(v==1) g = `<path d="M50,40 Q30,60 20,50 Q40,30 50,20 Q60,30 80,50 Q70,60 50,40 M50,60 L50,110 M30,90 L70,90" stroke="${G}" stroke-width="5" fill="none"/>`;
+                else g = `<rect x="35" y="20" width="10" height="90" fill="${G}"/><rect x="55" y="20" width="10" height="90" fill="${G}"/>`;
             }
-            else if(type==='chars') {
-                const ch = ['一','二','三','四','五','六','七','八','九'];
-                g = `<text x="50" y="50" font-size="40" text-anchor="middle" fill="#000">${ch[val-1]}</text><text x="50" y="105" font-size="40" text-anchor="middle" fill="${R}">萬</text>`;
+            else if(t==='chars') {
+                 const c = ['一','二','三','四','五','六','七','八','九'];
+                 g = `<text x="50" y="55" font-size="45" text-anchor="middle">${c[v-1]}</text><text x="50" y="110" font-size="45" text-anchor="middle" fill="${R}">萬</text>`;
             }
             else {
-                const h = {'east':'東','south':'南','west':'西','north':'北','red':'中','green':'發','white':' '};
-                const col = (val=='red'||val=='white') ? R : (val=='green'?G:'#000');
-                g = `<text x="50" y="85" font-size="70" text-anchor="middle" fill="${col}">${h[val]}</text>`;
-                if(val=='white') g += `<rect x="10" y="10" width="80" height="110" stroke="${B}" stroke-width="4" fill="none"/>`;
+                 const m = {'east':'東','south':'南','west':'西','north':'北','red':'中','green':'發','white':' '};
+                 const cl = (v=='red'||v=='white')?R:(v=='green'?G:'#000');
+                 g = `<text x="50" y="90" font-size="75" text-anchor="middle" fill="${cl}">${m[v]}</text>`;
+                 if(v=='white') g += `<rect x="10" y="10" width="80" height="110" stroke="${B}" stroke-width="5" fill="none"/>`;
             }
             return SVG.base(g);
         }
     };
 
-    /* --- GAME LOGIC --- */
+    /* --- LOGIC --- */
     let deck=[], players=[], discards=[], turn=0, paused=false, lastT=null;
 
     function init() {
-        deck = [];
-        ['dots','bamboo','chars'].forEach(t => { for(let i=1;i<=9;i++) for(let k=0;k<4;k++) deck.push({t,v:i}); });
-        ['east','south','west','north','red','green','white'].forEach(v => { for(let k=0;k<4;k++) deck.push({t:'honor',v}); });
+        deck=[];
+        ['dots','bamboo','chars'].forEach(t=>{for(let i=1;i<=9;i++)for(let k=0;k<4;k++)deck.push({t,v:i})});
+        ['east','south','west','north','red','green','white'].forEach(v=>{for(let k=0;k<4;k++)deck.push({t:'honor',v})});
         deck.sort(()=>Math.random()-0.5);
 
-        players = [[],[],[],[]]; discards = [];
-        // Deal 16 tiles (Taiwanese)
+        players=[[],[],[],[]]; discards=[];
+        // 16 Tiles
         for(let i=0;i<16;i++) for(let p=0;p<4;p++) players[p].push(deck.pop());
         
         players[0].sort(sortT);
@@ -211,18 +215,13 @@
         if(deck.length===0) return end("DRAW");
         const t = deck.pop();
         players[pid].push(t);
-        render(pid===0); // Fresh draw flag
+        render();
 
         if(pid===0) {
-            if(checkWin(players[0])) showAct(true,false,false,false);
+            if(checkWin(players[0])) showActs(true,false,false,false);
         } else {
-            setTimeout(()=>botPlay(pid), 1000);
+            setTimeout(()=>discard(pid, Math.floor(Math.random()*players[pid].length)), 1000);
         }
-    }
-
-    function botPlay(pid) {
-        if(checkWin(players[pid])) return end("BOT "+pid+" WINS");
-        discard(pid, Math.floor(Math.random()*players[pid].length));
     }
 
     function discard(pid, idx) {
@@ -232,78 +231,59 @@
         if(pid===0) players[0].sort(sortT);
         render();
         
-        // Check Interrupts (Simplified)
-        if(pid!==0) {
-             const h = players[0];
-             if(checkWin([...h,t])) { paused=true; showAct(true,true,true,true); return; }
+        if(pid!==0 && checkWin([...players[0], t])) {
+            paused=true; showActs(true,true,true,true);
+        } else {
+            if(!paused) setTimeout(()=>draw((pid+1)%4), 600);
         }
-        
-        // Next Turn
-        if(!paused) setTimeout(()=>draw((pid+1)%4), 600);
     }
 
-    window.act = function(type) {
-        document.getElementById('actions').style.display='none';
+    function act(type) {
+        document.getElementById('action-bar').style.display='none';
         paused=false;
         if(type==='hu') return end("YOU WIN!");
         if(type==='skip') { draw((lastT.from+1)%4); return; }
         
-        // Mock action execution (Standard play takes tile)
+        // Mock Action
         discards.pop();
-        players[0].push(lastT.t);
+        players[0].push(lastT.t); 
         players[0].sort(sortT);
-        // In real game, would discard immediately. 
-        // For simplicity, user discards now.
         render();
     }
 
-    function end(txt) {
-        document.getElementById('msg').style.display='flex';
-        document.getElementById('msg-txt').innerText=txt;
-    }
-
     /* --- RENDERER --- */
-    function render(fresh=false) {
-        document.getElementById('deck-count').innerText = deck.length;
-        
-        // Discards
-        const dz = document.getElementById('center-zone');
-        dz.innerHTML = '';
-        discards.forEach(t => {
-            const el = document.createElement('div'); el.className='discard-tile';
-            el.innerHTML = SVG.get(t.t, t.v);
-            dz.appendChild(el);
+    function render() {
+        const d = document.getElementById('center-field');
+        d.innerHTML=''; discards.forEach(t=>{
+            let el=document.createElement('div'); el.className='discard';
+            el.innerHTML=SVG.get(t.t,t.v); d.appendChild(el);
         });
 
-        // Player 0
+        // Human
         const p0 = document.getElementById('p0');
-        p0.innerHTML = '';
+        p0.innerHTML='';
         players[0].forEach((t,i) => {
-            const el = document.createElement('div'); el.className='tile';
-            if(fresh && i===players[0].length-1) el.classList.add('fresh');
-            el.innerHTML = SVG.get(t.t, t.v);
-            el.onclick = () => { if(!paused && players[0].length%3===2) discard(0,i); };
+            let el=document.createElement('div'); el.className='tile';
+            el.innerHTML=SVG.get(t.t,t.v);
+            el.onclick=()=>{if(!paused && players[0].length%3===2) discard(0,i)};
             p0.appendChild(el);
         });
 
-        // Bots
+        // Bots (Backs)
         [1,2,3].forEach(pid => {
-            const zone = document.getElementById('p'+pid);
-            zone.innerHTML = '';
-            players[pid].forEach(() => {
-                const el = document.createElement('div'); el.className='bot-tile';
-                zone.appendChild(el);
-            });
+             const z = document.getElementById('p'+pid);
+             z.innerHTML='';
+             players[pid].forEach(()=>{
+                 let el=document.createElement('div'); el.className='tile-back';
+                 z.appendChild(el);
+             });
         });
     }
 
-    function showAct(w,k,p,c) {
-        const b = document.getElementById('actions');
-        b.style.display='flex';
-    }
-
-    function sortT(a,b){ const o={'dots':0,'bamboo':1,'chars':2,'honor':3}; return (o[a.t]*10+(a.v||10)) - (o[b.t]*10+(b.v||10)); }
-    function checkWin(h) { return h.length%3===2 && Math.random()>0.9; } // Mock win logic for demo
+    function end(txt) { document.getElementById('msg').style.display='flex'; document.getElementById('msg-txt').innerText=txt; }
+    function showActs(w,k,p,c) { document.getElementById('action-bar').style.display='flex'; }
+    function sortT(a,b){ const o={'dots':0,'bamboo':1,'chars':2,'honor':3}; return (o[a.t]*10+(a.v||10))-(o[b.t]*10+(b.v||10)); }
+    function checkWin(h){ return h.length%3===2 && Math.random()>0.9; }
 
     init();
 </script>
