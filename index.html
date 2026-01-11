@@ -2,7 +2,8 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Mahjong v5: Master Logic</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mahjong Master v6</title>
     <style>
         :root {
             --bg-color: #2d5e3e;
@@ -25,160 +26,215 @@
             user-select: none;
         }
 
-        /* --- UI LAYERS --- */
+        /* --- MENUS & SCREENS --- */
         .screen {
             position: absolute; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.92); z-index: 200;
+            background: rgba(0,0,0,0.95); z-index: 300;
             display: flex; flex-direction: column;
             align-items: center; justify-content: center;
+            transition: opacity 0.3s;
         }
-        .hidden { display: none !important; }
+        .hidden { display: none !important; opacity: 0; }
 
-        h1 { font-size: 4em; color: gold; text-shadow: 0 0 20px orange; margin-bottom: 20px; }
-        
+        h1 { font-size: 4em; color: gold; text-shadow: 0 0 20px orange; margin-bottom: 10px; }
+        h2 { color: #ddd; border-bottom: 2px solid gold; padding-bottom: 10px; }
+
         .menu-btn {
             padding: 15px 40px; margin: 10px;
-            font-size: 24px; background: #444;
+            font-size: 22px; background: #444;
             color: white; border: 2px solid #666;
             cursor: pointer; transition: all 0.2s;
-            width: 300px; text-align: center;
-            border-radius: 8px;
+            width: 320px; text-align: center;
+            border-radius: 8px; text-transform: uppercase;
+            letter-spacing: 1px;
         }
-        .menu-btn:hover { background: gold; color: black; transform: scale(1.05); }
+        .menu-btn:hover { background: gold; color: black; transform: scale(1.05); border-color: white; }
+
+        /* --- STORE GRID --- */
+        #store-grid {
+            display: grid; grid-template-columns: repeat(3, 1fr);
+            gap: 20px; margin: 30px;
+        }
+        .skin-card {
+            border: 2px solid #555; padding: 20px; border-radius: 10px;
+            text-align: center; cursor: pointer; background: #222;
+            transition: 0.2s;
+        }
+        .skin-card:hover { background: #333; transform: translateY(-5px); }
+        .skin-card.active { border-color: gold; background: #442200; }
+        .skin-icon { font-size: 40px; margin-bottom: 10px; display: block; }
 
         /* --- GAME TABLE --- */
         #game-table {
-            position: relative; width: 900px; height: 900px;
+            position: relative; width: 95vh; height: 95vh;
+            max-width: 900px; max-height: 900px;
             border: 15px solid var(--table-border);
             border-radius: 40px; background: var(--bg-color);
             box-shadow: inset 0 0 100px rgba(0,0,0,0.8);
-            display: none;
+            display: none; /* Hidden until play */
         }
 
-        /* --- HUD --- */
+        /* --- HUD (FIXED POSITION) --- */
         #hud-top {
-            position: absolute; top: 15px; left: 15px;
-            background: rgba(0,0,0,0.6); padding: 8px 20px;
-            border-radius: 25px; font-size: 20px; border: 1px solid #555;
+            position: absolute;
+            top: 30px; right: 30px; /* Moved to Right to avoid overlapping */
+            background: rgba(0,0,0,0.7);
+            padding: 10px 25px;
+            border-radius: 30px;
+            font-size: 18px;
+            border: 2px solid rgba(255,215,0,0.3);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+            z-index: 100;
+            display: flex; gap: 20px;
         }
+        .hud-item { display: flex; align-items: center; gap: 8px; }
 
         /* --- NOTIFICATIONS --- */
         #center-overlay {
-            position: absolute; top: 50%; left: 50%;
+            position: absolute; top: 45%; left: 50%;
             transform: translate(-50%, -50%);
-            pointer-events: none; z-index: 100;
+            pointer-events: none; z-index: 150;
             text-align: center; width: 100%;
         }
         #big-msg {
             font-size: 6em; font-weight: 900; color: gold;
-            text-shadow: 5px 5px 0 #000, 0 0 30px red;
-            opacity: 0; transition: opacity 0.2s;
-            transform: scale(0.5); transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            text-shadow: 4px 4px 0 #000, 0 0 40px red;
+            opacity: 0; transition: all 0.3s;
+            transform: scale(0.5);
         }
-        #big-msg.show {
-            opacity: 1; transform: scale(1);
-        }
+        #big-msg.show { opacity: 1; transform: scale(1); }
 
-        /* --- ACTION BAR --- */
+        /* --- ACTION BUTTONS --- */
         #actions {
-            position: absolute; top: 58%; left: 50%;
+            position: absolute; top: 60%; left: 50%;
             transform: translate(-50%, -50%);
-            display: none; gap: 15px; z-index: 150;
+            display: none; gap: 10px; z-index: 200;
         }
         .action-btn {
-            padding: 15px 30px; font-size: 22px; font-weight: bold;
-            border: 3px solid white; border-radius: 10px;
-            cursor: pointer; box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+            padding: 12px 25px; font-size: 20px; font-weight: bold;
+            border: 3px solid rgba(255,255,255,0.5); border-radius: 50px;
+            cursor: pointer; box-shadow: 0 10px 20px rgba(0,0,0,0.4);
+            transition: transform 0.1s;
         }
-        .btn-hu { background: #ff0000; color: white; animation: pulse 1s infinite; }
-        .btn-kong { background: #ffcc00; color: black; }
-        .btn-pung { background: #00ccff; color: black; }
-        .btn-chow { background: #00ff99; color: black; }
-        .btn-skip { background: #999; color: white; }
+        .action-btn:active { transform: scale(0.95); }
+        .btn-hu { background: #e74c3c; color: white; animation: pulse 1s infinite; }
+        .btn-kong { background: #f1c40f; color: black; }
+        .btn-pung { background: #3498db; color: white; }
+        .btn-chow { background: #2ecc71; color: black; }
+        .btn-skip { background: #95a5a6; color: white; }
 
-        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
+        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(231, 76, 60, 0.7); } 70% { box-shadow: 0 0 0 15px rgba(231, 76, 60, 0); } 100% { box-shadow: 0 0 0 0 rgba(231, 76, 60, 0); } }
 
         /* --- TILES --- */
         .tile {
-            width: 42px; height: 58px;
+            width: 40px; height: 54px;
             background: var(--tile-bg); color: var(--tile-color);
-            border: 1px solid var(--tile-border); border-radius: 4px;
+            border: 1px solid var(--tile-border); border-radius: 6px;
             display: flex; justify-content: center; align-items: center;
-            font-size: 36px; box-shadow: 2px 4px 6px rgba(0,0,0,0.4);
+            font-size: 32px; box-shadow: 2px 4px 6px rgba(0,0,0,0.4);
             position: relative; user-select: none;
         }
         .tile-back {
-            background: #1a6b36; border: 1px solid #4da36e;
-            color: rgba(255,255,255,0.2);
+            background: #1e824c; border: 1px solid #5fd193;
+            color: rgba(255,255,255,0.1);
         }
 
-        /* --- LAYOUTS --- */
-        .hand-container { position: absolute; display: flex; gap: 12px; }
-        .exposed-tiles { display: flex; gap: 8px; }
+        /* --- SKINS --- */
+        body.skin-dark { --bg-color: #2c3e50; --table-border: #34495e; --tile-bg: #bdc3c7; }
+        body.skin-gold { --bg-color: #58140c; --table-border: #f1c40f; --tile-bg: #fffcdb; --tile-color: #5d4037; }
+
+        /* --- PLAYERS --- */
+        .hand-container { position: absolute; display: flex; gap: 10px; }
+        .exposed-tiles { display: flex; gap: 5px; }
         .hand-tiles { display: flex; gap: 2px; }
-        .meld { 
-            display: flex; gap: 1px; padding: 4px; 
-            background: rgba(0,0,0,0.2); border-radius: 6px; 
-            border: 1px solid rgba(255,255,255,0.1);
-        }
+        .meld { display: flex; gap: 1px; padding: 0 5px; background: rgba(0,0,0,0.15); border-radius: 4px; }
 
-        /* Player 0 (Human) */
-        #p0-area { bottom: 30px; left: 50%; transform: translateX(-50%); align-items: flex-end; }
+        /* P0 (User) */
+        #p0-area { bottom: 25px; left: 50%; transform: translateX(-50%); align-items: flex-end; }
         #p0-hand .tile { cursor: pointer; transition: transform 0.2s; }
-        #p0-hand .tile:hover { transform: translateY(-15px); border-color: gold; z-index: 10; }
-
+        #p0-hand .tile:hover { transform: translateY(-15px); border-color: gold; z-index: 50; }
+        
         /* Bots */
-        #p1-area { right: 40px; top: 50%; transform: translateY(-50%); flex-direction: column-reverse; align-items: flex-end; }
+        #p1-area { right: 30px; top: 50%; transform: translateY(-50%); flex-direction: column-reverse; align-items: flex-end; }
         #p1-hand, #p1-exposed { flex-direction: column; }
-        #p1-area .tile { transform: rotate(-90deg); width: 58px; height: 42px; }
+        #p1-area .tile { transform: rotate(-90deg); width: 54px; height: 40px; }
 
-        #p2-area { top: 30px; left: 50%; transform: translateX(-50%); flex-direction: row-reverse; align-items: flex-start; }
+        #p2-area { top: 25px; left: 50%; transform: translateX(-50%); flex-direction: row-reverse; align-items: flex-start; }
         #p2-area .tile { transform: rotate(180deg); }
 
-        #p3-area { left: 40px; top: 50%; transform: translateY(-50%); flex-direction: column; align-items: flex-start; }
+        #p3-area { left: 30px; top: 50%; transform: translateY(-50%); flex-direction: column; align-items: flex-start; }
         #p3-hand, #p3-exposed { flex-direction: column; }
-        #p3-area .tile { transform: rotate(90deg); width: 58px; height: 42px; }
+        #p3-area .tile { transform: rotate(90deg); width: 54px; height: 40px; }
 
         #discard-pile {
             position: absolute; top: 50%; left: 50%;
             transform: translate(-50%, -50%);
-            display: grid; grid-template-columns: repeat(12, 1fr);
+            display: grid; grid-template-columns: repeat(10, 1fr);
             gap: 4px;
         }
     </style>
 </head>
 <body>
 
-<!-- MENU -->
+<!-- MAIN MENU -->
 <div id="main-menu" class="screen">
-    <h1>MAHJONG LEGENDS</h1>
-    <div style="margin-bottom:20px; color:#aaa">v5.0: Kong & Win Update</div>
-    <button class="menu-btn" onclick="startGame()">START GAME</button>
+    <h1>🀄 MAHJONG MASTER</h1>
+    <div style="color:gold; margin-bottom:20px; font-size:20px">v6.0 Master Edition</div>
+    <div id="menu-coins" style="color:#aaa; margin-bottom:10px">Coins: 100</div>
+    
+    <button class="menu-btn" onclick="startGame()">▶ Start Game</button>
+    <button class="menu-btn" onclick="openStore()">🛒 Skin Store</button>
+    <button class="menu-btn" onclick="openTutorial()">📖 How to Play</button>
+    <button class="menu-btn" onclick="toggleFullScreen()">⛶ Full Screen</button>
 </div>
 
-<!-- GAME -->
+<!-- SHOP SCREEN -->
+<div id="store-screen" class="screen hidden">
+    <h2>SKIN STORE</h2>
+    <div id="store-status" style="color:gold">Coins: 0</div>
+    <div id="store-grid"></div>
+    <button class="menu-btn" style="width:200px" onclick="showMenu()">Back</button>
+</div>
+
+<!-- TUTORIAL SCREEN -->
+<div id="tutorial-screen" class="screen hidden">
+    <h2>HOW TO PLAY</h2>
+    <div style="max-width:600px; text-align:left; line-height:1.6; background:rgba(255,255,255,0.1); padding:20px; border-radius:10px;">
+        <p><strong>1. Goal:</strong> Assemble a hand of 4 sets (Triplets or Sequences) and 1 Pair.</p>
+        <p><strong>2. Draw & Discard:</strong> Every turn, you draw a tile and must discard one to keep 16 tiles.</p>
+        <p><strong>3. PUNG (碰):</strong> Taking a discarded tile to complete a Triplet (3 identical).</p>
+        <p><strong>4. CHOW (吃):</strong> Taking a discarded tile from the LEFT player to make a Sequence (e.g. 2-3-4).</p>
+        <p><strong>5. KONG (杠):</strong> Declaring a Quad (4 identical). You draw a replacement tile.</p>
+        <p><strong>6. HU (胡):</strong> Declaring victory when your hand is complete!</p>
+    </div>
+    <button class="menu-btn" style="margin-top:20px; width:200px" onclick="showMenu()">Got it!</button>
+</div>
+
+<!-- GAME UI -->
 <div id="game-table">
+    <!-- HUD moved to Top Right to avoid overlapping -->
     <div id="hud-top">
-        Tiles: <span id="wall-count">0</span> | 
-        Status: <span id="status-txt" style="color:gold">Waiting</span>
+        <div class="hud-item">🀄 <span id="wall-count">0</span></div>
+        <div class="hud-item">💰 <span id="game-coins">0</span></div>
+        <button style="background:none; border:1px solid #555; color:#aaa; cursor:pointer; padding:2px 8px; border-radius:4px" onclick="showMenu()">MENU</button>
     </div>
 
     <div id="center-overlay">
-        <div id="big-msg">ACTION!</div>
+        <div id="big-msg">READY?</div>
     </div>
 
     <div id="discard-pile"></div>
 
     <!-- ACTION BAR -->
     <div id="actions">
-        <button id="btn-hu" class="action-btn btn-hu" onclick="doWin()">HU (WIN)!</button>
+        <button id="btn-hu" class="action-btn btn-hu" onclick="doWin()">HU! (Win)</button>
         <button id="btn-kong" class="action-btn btn-kong" onclick="doKong()">KONG</button>
         <button id="btn-pung" class="action-btn btn-pung" onclick="doPung()">PUNG</button>
         <button id="btn-chow" class="action-btn btn-chow" onclick="doChow()">CHOW</button>
         <button class="action-btn btn-skip" onclick="skipAction()">PASS</button>
     </div>
 
-    <!-- PLAYERS -->
+    <!-- PLAYER ZONES -->
     <div id="p0-area" class="hand-container">
         <div id="p0-exposed" class="exposed-tiles"></div>
         <div id="p0-hand" class="hand-tiles"></div>
@@ -198,7 +254,16 @@
 </div>
 
 <script>
-    /* --- CORE DATA --- */
+    /* --- GAME DATA --- */
+    const SKINS = {
+        'classic': { name: 'Classic Green', cost: 0, class: '' },
+        'dark': { name: 'Midnight Blue', cost: 100, class: 'skin-dark' },
+        'gold': { name: 'Emperor Gold', cost: 500, class: 'skin-gold' }
+    };
+    
+    // Save System
+    let saveData = JSON.parse(localStorage.getItem('mahjongSave')) || { coins: 100, unlocked: ['classic'], activeSkin: 'classic' };
+    
     const TILE_MAP = {
         'east': 0x1F000, 'south': 0x1F001, 'west': 0x1F002, 'north': 0x1F003,
         'red': 0x1F004, 'green': 0x1F005, 'white': 0x1F006,
@@ -208,10 +273,84 @@
     let deck = [], players = [], exposed = [], discardPile = [];
     let turn = 0, lastDiscard = null, isPaused = false;
 
-    /* --- INIT --- */
-    function startGame() {
+    /* --- MENU FUNCTIONS --- */
+    function showMenu() {
+        document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
+        document.getElementById('main-menu').classList.remove('hidden');
+        document.getElementById('game-table').style.display = 'none';
+        document.getElementById('menu-coins').innerText = `Coins: ${saveData.coins}`;
+        applySkin();
+    }
+
+    function openStore() {
         document.getElementById('main-menu').classList.add('hidden');
+        document.getElementById('store-screen').classList.remove('hidden');
+        renderStore();
+    }
+
+    function openTutorial() {
+        document.getElementById('main-menu').classList.add('hidden');
+        document.getElementById('tutorial-screen').classList.remove('hidden');
+    }
+
+    function toggleFullScreen() {
+        if (!document.fullscreenElement) {
+            document.documentElement.requestFullscreen();
+        } else {
+            if (document.exitFullscreen) document.exitFullscreen();
+        }
+    }
+
+    function renderStore() {
+        const grid = document.getElementById('store-grid');
+        document.getElementById('store-status').innerText = `Coins: ${saveData.coins}`;
+        grid.innerHTML = '';
+        
+        for (let key in SKINS) {
+            const skin = SKINS[key];
+            const owned = saveData.unlocked.includes(key);
+            const active = saveData.activeSkin === key;
+            
+            const card = document.createElement('div');
+            card.className = `skin-card ${active ? 'active' : ''}`;
+            card.innerHTML = `
+                <span class="skin-icon">🀄</span>
+                <h3>${skin.name}</h3>
+                <p>${owned ? (active ? 'SELECTED' : 'OWNED') : skin.cost + ' Coins'}</p>
+            `;
+            card.onclick = () => buySkin(key);
+            grid.appendChild(card);
+        }
+    }
+
+    function buySkin(key) {
+        if (saveData.unlocked.includes(key)) {
+            saveData.activeSkin = key;
+        } else {
+            if (saveData.coins >= SKINS[key].cost) {
+                saveData.coins -= SKINS[key].cost;
+                saveData.unlocked.push(key);
+                saveData.activeSkin = key;
+            } else {
+                alert("Not enough coins!");
+                return;
+            }
+        }
+        localStorage.setItem('mahjongSave', JSON.stringify(saveData));
+        applySkin();
+        renderStore();
+    }
+
+    function applySkin() {
+        document.body.className = SKINS[saveData.activeSkin].class;
+    }
+
+    /* --- GAME ENGINE --- */
+    function startGame() {
+        document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
         document.getElementById('game-table').style.display = 'block';
+        document.getElementById('game-coins').innerText = saveData.coins;
+        applySkin();
         initRound();
     }
 
@@ -223,305 +362,225 @@
         turn = 0;
         isPaused = false;
         
-        // Deal 13 tiles (Standard) -> Dealer gets 14th
-        for (let i = 0; i < 13; i++) for (let p = 0; p < 4; p++) players[p].push(deck.pop());
+        // Deal 13 tiles
+        for(let i=0; i<13; i++) for(let p=0; p<4; p++) players[p].push(deck.pop());
         
-        // Dealer (Human) draws first
+        players[0].sort(sortAlgo);
+        updateUI();
         drawTile(0);
     }
 
     function createDeck() {
         let d = [];
-        ['chars','bamboo','dots'].forEach(type => { for(let i=1; i<=9; i++) for(let k=0; k<4; k++) d.push({type, val: i}); });
-        ['east','south','west','north','red','green','white'].forEach(val => { for(let k=0; k<4; k++) d.push({type: 'honor', val}); });
+        ['chars','bamboo','dots'].forEach(t => { for(let i=1; i<=9; i++) for(let k=0; k<4; k++) d.push({type:t, val:i}); });
+        ['east','south','west','north','red','green','white'].forEach(v => { for(let k=0; k<4; k++) d.push({type:'honor', val:v}); });
         return d.sort(() => Math.random() - 0.5);
     }
 
-    /* --- GAME LOOP --- */
     function drawTile(pid) {
-        if (deck.length === 0) return alert("Wall Empty - Draw!");
-        
-        const tile = deck.pop();
-        players[pid].push(tile);
+        if(deck.length === 0) return alert("Draw!");
+        const t = deck.pop();
+        players[pid].push(t);
         updateUI();
 
-        if (pid === 0) {
-            updateStatus("Your Turn");
-            checkSelfActions(); // Check for Zimo (Self-Draw Win) or Concealed Kong
+        if(pid === 0) {
+            // Human Turn
+            checkSelfWin();
         } else {
-            updateStatus(`Bot ${pid} Thinking...`);
-            setTimeout(() => botTurn(pid), 1000);
+            // Bot Turn
+            setTimeout(() => botLogic(pid), 1000);
         }
     }
 
-    function botTurn(pid) {
-        // 1. Check Win on Draw (Zimo)
-        if (checkWinAlgorithm(players[pid])) {
-            announceAction(pid, "HU! (Zimo)", 3000, () => endGame(pid));
+    function botLogic(pid) {
+        // Check Win
+        if(checkWin(players[pid])) {
+            announce(pid, "HU!", 2000, () => endGame(pid));
             return;
         }
-        // 2. Check Concealed Kong
-        // (Simplified: Bots skip concealed kong for speed, only discard)
-        
-        // 3. Discard
+        // Discard
         const idx = Math.floor(Math.random() * players[pid].length);
-        discardTile(pid, idx);
+        discard(pid, idx);
     }
 
-    function discardTile(pid, idx) {
-        const tile = players[pid].splice(idx, 1)[0];
-        lastDiscard = { tile, from: pid };
-        discardPile.push(tile);
+    function discard(pid, idx) {
+        const t = players[pid].splice(idx, 1)[0];
+        lastDiscard = { tile: t, from: pid };
+        discardPile.push(t);
+        if (pid === 0) players[0].sort(sortAlgo);
         updateUI();
-
-        // INTERRUPT PHASE: Check if anyone else wants this tile
-        checkInterrupts(tile, pid);
+        checkInterrupts(t, pid);
     }
 
-    /* --- INTERRUPT ENGINE --- */
-    function checkInterrupts(tile, fromPid) {
-        // PRIORITY 1: HUMAN ACTIONS
-        if (fromPid !== 0) {
-            const canWin = checkWinAlgorithm([...players[0], tile]);
-            const canKong = checkKong(players[0], tile);
-            const canPung = checkPung(players[0], tile);
-            const canChow = (fromPid === 3) && checkChow(players[0], tile);
+    function checkInterrupts(tile, from) {
+        // Human Interrupts
+        if (from !== 0) {
+            const hand = players[0];
+            const canHu = checkWin([...hand, tile]);
+            const canKong = hand.filter(x=>isSame(x,tile)).length >= 3;
+            const canPung = hand.filter(x=>isSame(x,tile)).length >= 2;
+            const canChow = (from === 3) && checkChow(hand, tile);
 
-            if (canWin || canKong || canPung || canChow) {
+            if (canHu || canKong || canPung || canChow) {
                 isPaused = true;
-                showActionButtons(canWin, canKong, canPung, canChow);
-                return; // Wait for input
+                showActions(canHu, canKong, canPung, canChow);
+                return;
             }
         }
 
-        // PRIORITY 2: BOT ACTIONS (With 3s Delay)
-        let actingBot = -1;
-        let actionType = "";
-
-        // Check Bots (1, 2, 3) - Order doesn't matter for simple version
-        for (let i = 1; i < 4; i++) {
-            if (i === fromPid) continue;
-            
-            // Cheat: Give bots 10% chance to Pung/Kong if they have pairs
-            // Real Logic: Check actual hand
-            if (checkWinAlgorithm([...players[i], tile])) {
-                actingBot = i; actionType = "HU!"; break;
-            }
-            if (checkKong(players[i], tile) && Math.random() > 0.5) {
-                actingBot = i; actionType = "KONG!"; break;
-            }
-            if (checkPung(players[i], tile) && Math.random() > 0.7) {
-                actingBot = i; actionType = "PUNG!"; break;
+        // Bot Interrupts (Simple RNG)
+        let actor = -1, action = "";
+        for(let i=1; i<4; i++) {
+            if(i !== from) {
+                if(checkWin([...players[i], tile])) { actor=i; action="HU!"; break; }
+                if(Math.random() < 0.1 && players[i].filter(x=>isSame(x,tile)).length>=2) { actor=i; action="PUNG!"; break; }
             }
         }
 
-        if (actingBot > -1) {
+        if (actor > -1) {
             isPaused = true;
-            // 3 SECOND DELAY MANDATE
-            announceAction(actingBot, actionType, 3000, () => {
-                performBotAction(actingBot, actionType, tile);
-            });
+            announce(actor, action, 2000, () => performBotAction(actor, action, tile));
         } else {
-            // No interrupts, next player draws
-            advanceTurn(fromPid);
+            advanceTurn(from);
         }
     }
 
-    function performBotAction(pid, type, tile) {
-        discardPile.pop(); // Take tile
-        if (type === "HU!") {
-             players[pid].push(tile);
-             endGame(pid);
-        } else if (type === "KONG!") {
-            // Remove 3, Add tile, Exposed
-            removeFromHand(pid, tile, 3);
-            exposed[pid].push([tile, tile, tile, tile]);
-            drawTile(pid); // Kong draws replacement
-        } else if (type === "PUNG!") {
+    function performBotAction(pid, action, tile) {
+        discardPile.pop();
+        if(action==="HU!") {
+            players[pid].push(tile);
+            endGame(pid);
+        } else {
+            // Pung
             removeFromHand(pid, tile, 2);
             exposed[pid].push([tile, tile, tile]);
-            // After Pung, must discard, not draw
-            setTimeout(() => {
-                 // Bot discards a random tile after Pung
-                 const discardIdx = Math.floor(Math.random() * players[pid].length);
-                 discardTile(pid, discardIdx);
-            }, 1000);
+            // Bot discards
+            setTimeout(() => discard(pid, 0), 1000);
         }
     }
 
-    function advanceTurn(currentPid) {
-        const next = (currentPid + 1) % 4;
-        drawTile(next);
+    function advanceTurn(current) {
+        drawTile((current + 1) % 4);
     }
 
-    /* --- HUMAN INTERACTION --- */
-    function checkSelfActions() {
-        // Check Zimo (Win on self draw)
-        if (checkWinAlgorithm(players[0])) {
-            document.getElementById('actions').style.display = 'flex';
-            document.getElementById('btn-hu').style.display = 'block';
-            // Hide others
-            ['kong','pung','chow'].forEach(id => document.getElementById('btn-'+id).style.display='none');
-            isPaused = true;
+    /* --- ACTIONS --- */
+    function checkSelfWin() {
+        if (checkWin(players[0])) {
+             isPaused = true;
+             showActions(true, false, false, false);
         }
-        // Logic for concealed Kong could go here
     }
 
-    function showActionButtons(win, kong, pung, chow) {
-        const bar = document.getElementById('actions');
-        bar.style.display = 'flex';
-        document.getElementById('btn-hu').style.display = win ? 'block' : 'none';
-        document.getElementById('btn-kong').style.display = kong ? 'block' : 'none';
-        document.getElementById('btn-pung').style.display = pung ? 'block' : 'none';
-        document.getElementById('btn-chow').style.display = chow ? 'block' : 'none';
-    }
-
-    // Human Commands
     window.doWin = function() {
-        if (lastDiscard && lastDiscard.from !== 0) players[0].push(lastDiscard.tile);
+        if(lastDiscard && lastDiscard.from!==0) players[0].push(lastDiscard.tile);
         endGame(0);
     };
 
     window.doPung = function() {
-        const t = lastDiscard.tile;
-        discardPile.pop();
+        const t = lastDiscard.tile; discardPile.pop();
         removeFromHand(0, t, 2);
         exposed[0].push([t,t,t]);
-        finishInterrupt(); // Now discard
+        finishAction();
     };
 
     window.doKong = function() {
-        const t = lastDiscard.tile;
-        discardPile.pop();
+        const t = lastDiscard.tile; discardPile.pop();
         removeFromHand(0, t, 3);
         exposed[0].push([t,t,t,t]);
-        drawTile(0); // Draw replacement
-        hideActions();
+        drawTile(0); // Replacement
+        finishAction(true);
     };
 
     window.doChow = function() {
-        const t = lastDiscard.tile;
-        discardPile.pop();
-        // Find combo (Simplified)
+        const t = lastDiscard.tile; discardPile.pop();
         const h = players[0];
+        // Basic Chow Finder
         const t1 = h.find(x=>x.type===t.type && x.val===t.val-1);
         const t2 = h.find(x=>x.type===t.type && x.val===t.val+1);
-        
         if(t1 && t2) {
             removeSpecific(0, t1); removeSpecific(0, t2);
-            exposed[0].push([t1, t, t2].sort((a,b)=>a.val-b.val));
-            finishInterrupt();
+            exposed[0].push([t1, t, t2].sort(sortAlgo));
+            finishAction();
         }
     };
 
     window.skipAction = function() {
-        hideActions();
+        document.getElementById('actions').style.display = 'none';
         isPaused = false;
         advanceTurn(lastDiscard.from);
     };
 
-    function finishInterrupt() {
-        hideActions();
+    function finishAction(keepTurn) {
+        document.getElementById('actions').style.display = 'none';
         updateUI();
-        updateStatus("Action Complete. Discard.");
-        isPaused = false;
-        turn = 0; // Human turn to discard
+        if(!keepTurn) {
+            isPaused = false;
+            turn = 0; // Human Discard Phase
+        }
     }
 
-    function hideActions() { document.getElementById('actions').style.display = 'none'; }
-
-    /* --- VISUALS --- */
-    function announceAction(pid, text, delay, callback) {
-        const el = document.getElementById('big-msg');
-        el.innerText = pid === 0 ? text : `BOT ${pid}\n${text}`;
-        el.classList.add('show');
-        updateStatus(`Bot ${pid} is triggering ${text}...`);
-        
-        setTimeout(() => {
-            el.classList.remove('show');
-            callback();
-        }, delay);
-    }
-
-    function endGame(winnerPid) {
-        const name = winnerPid === 0 ? "YOU" : `BOT ${winnerPid}`;
-        document.getElementById('big-msg').innerHTML = `${name} WON!`;
-        document.getElementById('big-msg').classList.add('show');
-        isPaused = true;
-        setTimeout(() => {
-            alert(`Game Over! Winner: ${name}`);
-            location.reload();
-        }, 2000);
-    }
-
-    function updateStatus(msg) {
-        document.getElementById('status-txt').innerText = msg;
-        document.getElementById('wall-count').innerText = deck.length;
+    function showActions(hu, k, p, c) {
+        const b = document.getElementById('actions');
+        b.style.display = 'flex';
+        document.getElementById('btn-hu').style.display = hu?'block':'none';
+        document.getElementById('btn-kong').style.display = k?'block':'none';
+        document.getElementById('btn-pung').style.display = p?'block':'none';
+        document.getElementById('btn-chow').style.display = c?'block':'none';
     }
 
     /* --- LOGIC HELPERS --- */
-    function checkPung(hand, tile) { return hand.filter(x => isSame(x, tile)).length >= 2; }
-    function checkKong(hand, tile) { return hand.filter(x => isSame(x, tile)).length >= 3; }
-    function checkChow(hand, tile) {
-        if (tile.type === 'honor') return false;
-        const has = (v) => hand.some(x => x.type === tile.type && x.val === v);
-        // Check neighbors (2-3 for 1, etc)
-        const v = tile.val;
-        return (has(v-1) && has(v+1)) || (has(v-1) && has(v-2)) || (has(v+1) && has(v+2));
+    function checkWin(hand) {
+        // Simplified Win Check (1 Pair + Sets)
+        let counts = {};
+        hand.forEach(t => counts[t.type+t.val] = (counts[t.type+t.val]||0)+1);
+        let pairs = 0, sets = 0;
+        for(let k in counts) {
+            if(counts[k]===2) pairs++;
+            if(counts[k]>=3) sets++;
+        }
+        return pairs === 1 && (sets + pairs >= 5); // Heuristic
     }
 
-    // Basic Win Logic (4 Sets + 1 Pair)
-    function checkWinAlgorithm(hand) {
-        // Deep copy to avoid mutating
-        let tiles = JSON.parse(JSON.stringify(hand));
-        tiles.sort((a,b) => getVal(a) - getVal(b));
+    function checkChow(hand, tile) {
+        if(tile.type==='honor') return false;
+        const has = (v) => hand.some(x => x.type===tile.type && x.val===v);
+        return (has(tile.val-1) && has(tile.val+1));
+    }
 
-        // Recursive checker is too heavy for this snippets, implementing basic pair check
-        // Must have 14 tiles (or 13+1)
-        if (tiles.length % 3 !== 2) return false;
+    function announce(pid, msg, time, cb) {
+        const el = document.getElementById('big-msg');
+        el.innerText = pid===0 ? msg : `BOT ${pid}\n${msg}`;
+        el.classList.add('show');
+        setTimeout(() => { el.classList.remove('show'); cb(); }, time);
+    }
 
-        // Simple heuristic for "Likely Win" (Pairs + Triples)
-        // A proper Mahjong algorithm requires backtracking recursion
-        // This is a placeholder logic that checks if we have mostly sets
-        let pairs = 0;
-        let sets = 0;
+    function endGame(winner) {
+        const msg = winner===0 ? "YOU WIN!" : `BOT ${winner} WINS!`;
+        document.getElementById('big-msg').innerHTML = `<div style='font-size:0.5em'>GAME OVER</div>${msg}`;
+        document.getElementById('big-msg').classList.add('show');
         
-        // Count duplicates
-        let counts = {};
-        tiles.forEach(t => {
-            const key = t.type + t.val;
-            counts[key] = (counts[key] || 0) + 1;
-        });
-        
-        // Very basic win check: All tiles must be part of a set (3) or the pair (2)
-        // This is simplified. It assumes standard hands.
-        let orphan = 0;
-        for (let k in counts) {
-            let c = counts[k];
-            if (c === 2) pairs++;
-            else if (c === 3 || c === 4) sets++;
-            else orphan++;
+        if(winner === 0) {
+            saveData.coins += 50;
+            localStorage.setItem('mahjongSave', JSON.stringify(saveData));
         }
-        return (orphan === 0 && pairs === 1);
+        setTimeout(() => showMenu(), 3000);
     }
 
     /* --- UTILS --- */
-    function isSame(a, b) { return a.type === b.type && a.val === b.val; }
+    function isSame(a,b) { return a.type===b.type && a.val===b.val; }
+    function sortAlgo(a,b) { 
+        const s = {'chars':100,'dots':200,'bamboo':300,'honor':400};
+        const va = typeof a.val==='string' ? 10 : a.val;
+        const vb = typeof b.val==='string' ? 10 : b.val;
+        return (s[a.type]+va) - (s[b.type]+vb);
+    }
     function removeFromHand(pid, t, n) {
-        let count = 0;
-        players[pid] = players[pid].filter(x => {
-            if(count < n && isSame(x, t)) { count++; return false; }
-            return true;
-        });
+        let c = 0;
+        players[pid] = players[pid].filter(x => { if(c<n && isSame(x,t)) {c++; return false;} return true; });
     }
     function removeSpecific(pid, t) {
         const i = players[pid].findIndex(x => isSame(x,t));
-        if (i>-1) players[pid].splice(i,1);
-    }
-    function getVal(t) {
-        const s = {'chars':100, 'dots':200, 'bamboo':300, 'honor':400};
-        let v = typeof t.val === 'string' ? ['east','south','west','north','red','green','white'].indexOf(t.val) : t.val;
-        return (s[t.type]||0) + v;
+        if(i>-1) players[pid].splice(i,1);
     }
     function getChar(t) {
         if (t.type === 'honor') return String.fromCodePoint(TILE_MAP[t.val]);
@@ -530,38 +589,44 @@
 
     /* --- RENDER --- */
     function updateUI() {
-        document.getElementById('discard-pile').innerHTML = '';
-        discardPile.forEach(t => document.getElementById('discard-pile').appendChild(createTile(t)));
+        document.getElementById('wall-count').innerText = deck.length;
+        const d = document.getElementById('discard-pile');
+        d.innerHTML = '';
+        discardPile.forEach(t => d.appendChild(createTile(t)));
 
         [0,1,2,3].forEach(pid => {
             const hDiv = document.getElementById(`p${pid}-hand`);
             const eDiv = document.getElementById(`p${pid}-exposed`);
             hDiv.innerHTML = ''; eDiv.innerHTML = '';
-            
+
             exposed[pid].forEach(m => {
-                const d = document.createElement('div'); d.className='meld';
-                m.forEach(t => { let el=createTile(t); el.style.background='#ddd'; d.appendChild(el); });
-                eDiv.appendChild(d);
+                const div = document.createElement('div'); div.className='meld';
+                m.forEach(t => { let el=createTile(t); el.style.background='#ddd'; div.appendChild(el); });
+                eDiv.appendChild(div);
             });
 
             players[pid].forEach((t, i) => {
-                if (pid===0) {
+                if(pid === 0) {
                     let el = createTile(t);
-                    el.onclick = () => { if(!isPaused && turn===0) discardTile(0, i); };
+                    el.onclick = () => { if(!isPaused && turn===0) discard(0, i); };
                     hDiv.appendChild(el);
                 } else {
                     let el = document.createElement('div');
-                    el.className='tile tile-back'; el.innerText='🀫';
+                    el.className='tile tile-back';
                     hDiv.appendChild(el);
                 }
             });
         });
     }
+
     function createTile(t) {
-        let d = document.createElement('div');
-        d.className = `tile ${t.type}`; d.innerText = getChar(t);
-        return d;
+        let el = document.createElement('div');
+        el.className = `tile ${t.type}`;
+        el.innerText = getChar(t);
+        return el;
     }
+
+    showMenu();
 </script>
 </body>
 </html>
