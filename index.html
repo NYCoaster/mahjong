@@ -2,31 +2,34 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Mahjong v2 - Pung/Chow</title>
+    <title>Mahjong v3</title>
     <style>
         body {
             margin: 0;
             background-color: #2d5e3e;
             color: white;
-            font-family: sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             display: flex;
             flex-direction: column;
             align-items: center;
             min-height: 100vh;
             overflow: hidden;
+            user-select: none;
         }
 
+        /* GAME TABLE (Square) */
         #game-table {
             position: relative;
-            width: 800px;
-            height: 800px;
-            border: 15px solid #4a2c18;
-            border-radius: 30px;
-            margin-top: 20px;
-            box-shadow: inset 0 0 50px rgba(0,0,0,0.5);
+            width: 850px;
+            height: 850px;
+            border: 15px solid #5c3a21;
+            border-radius: 40px;
+            margin-top: 10px;
+            background: #2d5e3e;
+            box-shadow: inset 0 0 80px rgba(0,0,0,0.6);
         }
 
-        /* Central Area */
+        /* --- CENTRAL HUB --- */
         #center-area {
             position: absolute;
             top: 50%;
@@ -38,111 +41,182 @@
             flex-direction: column;
             justify-content: center;
             align-items: center;
+            z-index: 10;
         }
 
+        #info-panel {
+            background: rgba(0,0,0,0.5);
+            padding: 10px 20px;
+            border-radius: 15px;
+            text-align: center;
+            margin-bottom: 15px;
+            border: 1px solid rgba(255,255,255,0.2);
+            width: 100%;
+        }
+
+        #status-text { font-size: 1.4em; margin: 0 0 5px 0; color: #ffd700; }
+        #deck-count { font-size: 1em; color: #ccc; }
+
+        /* SLIDER CONTROL */
+        #speed-control {
+            margin-top: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.9em;
+        }
+        input[type=range] { accent-color: #ffd700; cursor: pointer; }
+
+        /* DISCARD GRID */
         #discard-pile {
             display: grid;
             grid-template-columns: repeat(10, 1fr);
-            gap: 4px;
-            margin-bottom: 20px;
+            gap: 3px;
+            margin-bottom: 15px;
+            padding: 10px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 8px;
         }
 
-        #status-text {
-            background: rgba(0,0,0,0.6);
-            padding: 5px 15px;
-            border-radius: 10px;
-            margin-bottom: 10px;
-        }
-
-        /* Action Buttons */
-        #actions {
-            display: none; /* Hidden by default */
-            gap: 10px;
-            z-index: 100;
-        }
-
+        /* BUTTONS */
+        #actions { display: none; gap: 10px; }
         .btn {
-            padding: 10px 20px;
-            font-size: 18px;
+            padding: 12px 24px;
+            font-size: 16px;
             font-weight: bold;
             cursor: pointer;
             border: none;
-            border-radius: 5px;
-            text-transform: uppercase;
+            border-radius: 8px;
+            box-shadow: 0 4px 0 rgba(0,0,0,0.4);
+            transition: transform 0.1s;
         }
-        .btn-pung { background: #ffcc00; color: #000; }
-        .btn-chow { background: #00ccff; color: #000; }
-        .btn-skip { background: #cc0000; color: white; }
-        .btn:hover { transform: scale(1.1); }
+        .btn:active { transform: translateY(4px); box-shadow: none; }
+        .btn-pung { background: #ffcc00; color: #332200; }
+        .btn-chow { background: #00ccff; color: #002233; }
+        .btn-skip { background: #cc4444; color: white; }
 
-        /* Tiles */
+        /* --- TILE STYLES --- */
         .tile {
-            width: 36px;
-            height: 50px;
+            width: 38px;
+            height: 52px;
             background: #fff;
             color: #000;
             border-radius: 4px;
             display: flex;
             justify-content: center;
             align-items: center;
-            font-size: 30px;
-            box-shadow: 2px 2px 4px rgba(0,0,0,0.4);
-            cursor: default;
-            user-select: none;
+            font-size: 32px;
+            box-shadow: 1px 2px 4px rgba(0,0,0,0.5);
             position: relative;
+            border: 1px solid #999;
         }
-        .tile-back { background: #155d32; border: 1px solid #fff; }
-        
-        /* Hands */
-        .hand-container {
-            position: absolute;
-            display: flex;
-            align-items: flex-end;
-            gap: 10px;
+        .tile-back {
+            background: #1a6b36;
+            border: 1px solid #aaddbb;
+            color: rgba(255,255,255,0.2);
         }
-        
+
+        /* --- PLAYER ZONES --- */
+        .hand-container { position: absolute; display: flex; gap: 10px; }
+        .exposed-tiles { display: flex; gap: 8px; }
         .hand-tiles { display: flex; gap: 2px; }
-        .exposed-tiles { display: flex; gap: 5px; margin-right: 15px; }
-        .meld { display: flex; gap: 1px; padding-right: 5px; border-right: 2px solid rgba(0,0,0,0.2); }
+        .meld { display: flex; gap: 1px; padding: 2px; background: rgba(0,0,0,0.2); border-radius: 4px; }
 
-        /* Positioning */
-        #p0-area { bottom: 20px; left: 50%; transform: translateX(-50%); }
-        #p1-area { right: 20px; top: 50%; transform: translateY(-50%) rotate(-90deg); }
-        #p2-area { top: 20px; left: 50%; transform: translateX(-50%) rotate(180deg); }
-        #p3-area { left: 20px; top: 50%; transform: translateY(-50%) rotate(90deg); }
+        /* PLAYER 0 (BOTTOM - HUMAN) */
+        #p0-area {
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            align-items: flex-end;
+        }
+        #p0-hand .tile {
+            cursor: pointer;
+            transition: margin-bottom 0.2s;
+        }
+        #p0-hand .tile:hover {
+            margin-bottom: 15px;
+            border-color: gold;
+            box-shadow: 0 0 10px gold;
+        }
 
-        /* Interactive Human Tiles */
-        #p0-area .hand-tiles .tile { cursor: pointer; transition: transform 0.1s; }
-        #p0-area .hand-tiles .tile:hover { transform: translateY(-10px); border: 2px solid gold; }
+        /* PLAYER 1 (RIGHT - BOT) */
+        #p1-area {
+            right: 30px;
+            top: 50%;
+            transform: translateY(-50%);
+            flex-direction: column-reverse; /* Stack bottom-to-top */
+            align-items: flex-end;
+        }
+        #p1-hand { flex-direction: column; } /* Vertical stack */
+        #p1-exposed { flex-direction: column; }
+        /* Rotate tiles for side view */
+        #p1-area .tile { transform: rotate(-90deg); width: 52px; height: 38px; }
+
+        /* PLAYER 2 (TOP - BOT) */
+        #p2-area {
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            flex-direction: row-reverse;
+            align-items: flex-start;
+        }
+        #p2-area .tile { transform: rotate(180deg); }
+
+        /* PLAYER 3 (LEFT - BOT) */
+        #p3-area {
+            left: 30px;
+            top: 50%;
+            transform: translateY(-50%);
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        #p3-hand { flex-direction: column; }
+        #p3-exposed { flex-direction: column; }
+        #p3-area .tile { transform: rotate(90deg); width: 52px; height: 38px; }
 
     </style>
 </head>
 <body>
 
 <div id="game-table">
+    <!-- CENTER INFO HUB -->
     <div id="center-area">
-        <h3 id="status-text">Initializing...</h3>
+        <div id="info-panel">
+            <h2 id="status-text">Initializing...</h2>
+            <div id="deck-count">Wall: 0 Tiles</div>
+            
+            <div id="speed-control">
+                <span>Bot Speed:</span>
+                <input type="range" id="speedSlider" min="100" max="2000" value="1000" step="100" oninput="updateSpeed(this.value)">
+                <span id="speedDisplay">1.0s</span>
+            </div>
+        </div>
+
         <div id="discard-pile"></div>
+
         <div id="actions">
-            <button class="btn btn-pung" onclick="doPung()">PUNG</button>
-            <button class="btn btn-chow" onclick="doChow()">CHOW</button>
+            <button class="btn btn-pung" onclick="doPung()">PUNG 碰</button>
+            <button class="btn btn-chow" onclick="doChow()">CHOW 吃</button>
             <button class="btn btn-skip" onclick="skipAction()">SKIP</button>
         </div>
     </div>
 
-    <!-- Players: 0=Human, 1=Right, 2=Top, 3=Left -->
+    <!-- PLAYERS -->
     <div id="p0-area" class="hand-container">
         <div id="p0-exposed" class="exposed-tiles"></div>
         <div id="p0-hand" class="hand-tiles"></div>
     </div>
+    
     <div id="p1-area" class="hand-container">
         <div id="p1-exposed" class="exposed-tiles"></div>
         <div id="p1-hand" class="hand-tiles"></div>
     </div>
+    
     <div id="p2-area" class="hand-container">
         <div id="p2-exposed" class="exposed-tiles"></div>
         <div id="p2-hand" class="hand-tiles"></div>
     </div>
+    
     <div id="p3-area" class="hand-container">
         <div id="p3-exposed" class="exposed-tiles"></div>
         <div id="p3-hand" class="hand-tiles"></div>
@@ -157,16 +231,21 @@
         'chars': 0x1F007, 'bamboo': 0x1F010, 'dots': 0x1F019
     };
     
-    // Game State
     let deck = [], players = [], exposed = [], discardPile = [];
     let turn = 0;
-    let lastDiscard = null; // { tile, playerIdx }
+    let lastDiscard = null;
     let paused = false;
+    let botDelay = 1000;
+
+    function updateSpeed(val) {
+        botDelay = parseInt(val);
+        document.getElementById('speedDisplay').innerText = (botDelay/1000).toFixed(1) + 's';
+    }
 
     function initGame() {
         deck = createDeck();
         players = [[], [], [], []];
-        exposed = [[], [], [], []]; // Stores Pungs/Chows
+        exposed = [[], [], [], []];
         discardPile = [];
         turn = 0;
         
@@ -175,7 +254,7 @@
             for (let p = 0; p < 4; p++) players[p].push(deck.pop());
         }
         sortHand(0);
-        renderAll();
+        updateUI();
         updateStatus("Your Turn");
     }
 
@@ -190,30 +269,28 @@
         return d.sort(() => Math.random() - 0.5);
     }
 
-    // --- CORE GAME LOOP ---
-
+    // --- CORE LOOP ---
     function nextTurn(nextPlayer) {
         turn = nextPlayer % 4;
-        renderAll();
+        updateUI();
 
-        if (deck.length === 0) return updateStatus("Draw! Game Over.");
+        if (deck.length === 0) return updateStatus("Draw! Wall Empty.");
 
-        // Draw Tile
         const tile = deck.pop();
         players[turn].push(tile);
+        updateUI(); // Update for draw
         
         if (turn === 0) {
             updateStatus("Your Turn");
             sortHand(0);
-            renderAll();
+            renderHands();
         } else {
             updateStatus(`Player ${turn} Thinking...`);
-            setTimeout(() => botDiscard(turn), 800);
+            setTimeout(() => botDiscard(turn), botDelay);
         }
     }
 
     function botDiscard(pIdx) {
-        // Simple logic: discard random tile
         const idx = Math.floor(Math.random() * players[pIdx].length);
         handleDiscard(pIdx, idx);
     }
@@ -222,87 +299,65 @@
         const tile = players[pIdx].splice(tileIdx, 1)[0];
         lastDiscard = { tile, from: pIdx };
         discardPile.push(tile);
-        renderAll();
+        updateUI();
 
-        // INTERRUPT: Check if HUMAN (Player 0) can action
         if (pIdx !== 0) {
             checkHumanInterrupt(tile, pIdx);
         } else {
-            // Human discarded, move to Player 1
-            setTimeout(() => nextTurn(1), 500);
+            setTimeout(() => nextTurn(1), botDelay/2);
         }
     }
 
     // --- INTERRUPT LOGIC ---
-
     function checkHumanInterrupt(tile, fromPlayer) {
         const hand = players[0];
+        // Pung: Any pair matches
         let canPung = hand.filter(t => isSame(t, tile)).length >= 2;
         
-        // Chow only allowed from Player 3 (Left)
+        // Chow: Only from Left (Player 3)
         let canChow = false;
         if (fromPlayer === 3 && tile.type !== 'honor') {
-           // Simplified Chow: Check if we have neighbors (e.g. 2,3 for 1)
-           // This is a basic check. Real games allow multiple chow combos.
            const v = tile.val;
            const has = (n) => hand.some(t => t.type === tile.type && t.val === n);
-           if ((has(v-1) && has(v+1)) || (has(v+1) && has(v+2)) || (has(v-1) && has(v-2))) {
-               canChow = true;
-           }
+           if ((has(v-1) && has(v+1)) || (has(v+1) && has(v+2)) || (has(v-1) && has(v-2))) canChow = true;
         }
 
         if (canPung || canChow) {
             paused = true;
             showActions(canPung, canChow);
         } else {
-            // No action, proceed to next player
-            setTimeout(() => nextTurn(fromPlayer + 1), 500);
+            setTimeout(() => nextTurn(fromPlayer + 1), botDelay/2);
         }
     }
 
     function showActions(pung, chow) {
-        updateStatus("Action Available!");
         const div = document.getElementById('actions');
         div.style.display = 'flex';
         div.querySelector('.btn-pung').style.display = pung ? 'block' : 'none';
         div.querySelector('.btn-chow').style.display = chow ? 'block' : 'none';
     }
 
-    // --- ACTIONS ---
-
     window.doPung = function() {
-        // Remove 2 matching tiles
         const tile = lastDiscard.tile;
         removeFromHand(0, tile, 2);
-        
-        // Add to exposed (The discard + 2 from hand)
         exposed[0].push([tile, tile, tile]);
-        
-        // Remove from discard pile (It was claimed)
         discardPile.pop();
-        
         finishAction();
     };
 
     window.doChow = function() {
-        // Simplified: Auto-find the first valid sequence
         const tile = lastDiscard.tile;
-        const v = tile.val;
-        const type = tile.type;
+        const v = tile.val; const type = tile.type;
         const hand = players[0];
-        
-        // Try to find neighbors
-        let t1, t2;
         const find = (val) => hand.find(t => t.type === type && t.val === val);
         
-        // Priority: Middle (v-1, v+1), then Ends
+        let t1, t2;
         if (find(v-1) && find(v+1)) { t1 = find(v-1); t2 = find(v+1); }
         else if (find(v+1) && find(v+2)) { t1 = find(v+1); t2 = find(v+2); }
         else if (find(v-1) && find(v-2)) { t1 = find(v-1); t2 = find(v-2); }
         
         if (t1 && t2) {
-            removeSpecificTile(0, t1);
-            removeSpecificTile(0, t2);
+            removeSpecificTile(0, t1); removeSpecificTile(0, t2);
             exposed[0].push([t1, tile, t2].sort((a,b) => a.val - b.val));
             discardPile.pop();
             finishAction();
@@ -312,59 +367,53 @@
     window.skipAction = function() {
         document.getElementById('actions').style.display = 'none';
         paused = false;
-        // Resume turn from whoever would have been next
         nextTurn(lastDiscard.from + 1);
     };
 
     function finishAction() {
         document.getElementById('actions').style.display = 'none';
         paused = false;
-        updateStatus("Action Complete. Discard a tile.");
-        renderAll();
-        // Turn is now Human's (0), but we don't draw. We just discard.
+        updateStatus("Taken! Discard a tile.");
+        updateUI();
         turn = 0;
     }
 
     // --- HELPERS ---
-
     function removeFromHand(pIdx, matchTile, count) {
         let removed = 0;
         players[pIdx] = players[pIdx].filter(t => {
-            if (removed < count && isSame(t, matchTile)) {
-                removed++;
-                return false;
-            }
+            if (removed < count && isSame(t, matchTile)) { removed++; return false; }
             return true;
         });
     }
-
     function removeSpecificTile(pIdx, exactTile) {
         const idx = players[pIdx].indexOf(exactTile);
         if (idx > -1) players[pIdx].splice(idx, 1);
     }
-
     function isSame(t1, t2) { return t1.type === t2.type && t1.val === t2.val; }
-
     function sortHand(pIdx) {
         players[pIdx].sort((a, b) => getVal(a) - getVal(b));
     }
-
     function getVal(t) {
         const typeScores = { 'chars': 100, 'dots': 200, 'bamboo': 300, 'honor': 400 };
         let v = t.val;
         if (t.type === 'honor') v = ['east','south','west','north','red','green','white'].indexOf(t.val);
         return (typeScores[t.type] || 0) + v;
     }
-
     function getChar(t) {
         if (t.type === 'honor') return String.fromCodePoint(TILE_MAP[t.val]);
         return String.fromCodePoint(TILE_MAP[t.type] + (t.val - 1));
     }
+    function updateStatus(msg) { document.getElementById('status-text').innerText = msg; }
 
     // --- RENDERING ---
+    function updateUI() {
+        document.getElementById('deck-count').innerText = `Wall: ${deck.length} Tiles`;
+        renderDiscard();
+        renderHands();
+    }
 
-    function renderAll() {
-        // Render Discards
+    function renderDiscard() {
         const dPile = document.getElementById('discard-pile');
         dPile.innerHTML = '';
         discardPile.forEach(t => {
@@ -373,8 +422,9 @@
             el.textContent = getChar(t);
             dPile.appendChild(el);
         });
+    }
 
-        // Render Players
+    function renderHands() {
         [0,1,2,3].forEach(pIdx => {
             // Hand
             const handDiv = document.getElementById(`p${pIdx}-hand`);
@@ -392,7 +442,7 @@
                 handDiv.appendChild(el);
             });
 
-            // Exposed Melds
+            // Exposed
             const exposedDiv = document.getElementById(`p${pIdx}-exposed`);
             exposedDiv.innerHTML = '';
             exposed[pIdx].forEach(meld => {
@@ -402,7 +452,14 @@
                     const el = document.createElement('div');
                     el.className = 'tile';
                     el.textContent = getChar(t);
-                    el.style.background = '#eee'; // Distinction
+                    if (pIdx === 1 || pIdx === 3) {
+                        // Rotate exposed tiles for side players
+                         el.style.transform = pIdx === 1 ? 'rotate(-90deg)' : 'rotate(90deg)';
+                         el.style.width = '52px'; el.style.height = '38px';
+                    } else if (pIdx === 2) {
+                         el.style.transform = 'rotate(180deg)';
+                    }
+                    el.style.background = '#ddd';
                     mDiv.appendChild(el);
                 });
                 exposedDiv.appendChild(mDiv);
