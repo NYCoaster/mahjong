@@ -3,22 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mahjong v22: Strict Logic</title>
+    <title>Mahjong v23: Self-Gaung</title>
     <style>
         :root {
-            /* --- FLUENT VARS --- */
-            --mica: #f3f3f3;
-            --surface: #ffffff;
-            --text: #202020;
-            --accent: #0078d4;
-            --border: #e5e5e5;
+            /* FLUENT VARS */
+            --mica: #f3f3f3; --surface: #ffffff; --text: #202020;
+            --accent: #0078d4; --border: #e5e5e5;
             
-            /* --- GAME VARS --- */
-            --felt: #104a30;
-            --wood: #5d4037;
-            --tile-face: #fcfcfc;
-            --tile-back: #005a9e;
-            --tile-stroke: #ccc;
+            /* GAME VARS */
+            --felt: #104a30; --wood: #5d4037;
+            --tile-face: #fdfdfd; --tile-back: #005a9e; --tile-stroke: #ccc;
         }
 
         /* DARK THEME */
@@ -42,7 +36,7 @@
             height: 100vh; display: flex; overflow: hidden; user-select: none;
         }
 
-        /* --- LAYOUT --- */
+        /* LAYOUT */
         #sidebar {
             width: 250px; background: var(--surface); border-right: 1px solid var(--border);
             display: flex; flex-direction: column; padding: 20px; gap: 8px; z-index: 100;
@@ -56,7 +50,7 @@
 
         #main { flex: 1; position: relative; display: flex; justify-content: center; align-items: center; }
 
-        /* --- TABLE (SQUARE) --- */
+        /* TABLE */
         #table {
             width: 96vmin; height: 96vmin; max-width: 900px; max-height: 900px;
             background: var(--felt); border: 15px solid var(--wood);
@@ -64,7 +58,7 @@
             box-shadow: 0 0 50px rgba(0,0,0,0.5);
         }
 
-        /* --- TILE GEOMETRY --- */
+        /* TILE */
         .tile {
             background: var(--tile-face); border: 1px solid var(--tile-stroke);
             border-radius: 4px; display: flex; justify-content: center; align-items: center;
@@ -78,39 +72,20 @@
             border-radius: 3px;
         }
 
-        /* SIZES */
-        .portrait { width: 42px; height: 58px; }   
-        .landscape { width: 58px; height: 42px; }  
+        .portrait { width: 42px; height: 56px; }
+        .landscape { width: 56px; height: 42px; }
 
-        /* --- PLAYER ZONES (FIXED) --- */
+        /* ZONES */
         .zone { position: absolute; display: flex; gap: 2px; justify-content: center; align-items: center; }
         
-        /* P0 (Bottom) */
-        #p0 { 
-            bottom: 15px; left: 50%; transform: translateX(-50%);
-            align-items: flex-end; width: 90%; height: 60px;
-        }
+        #p0 { bottom: 15px; left: 50%; transform: translateX(-50%); align-items: flex-end; width: 90%; height: 60px; }
         #p0 .tile:hover { transform: translateY(-15px); border-color: var(--accent); }
         
-        /* P2 (Top) */
-        #p2 {
-            top: 15px; left: 50%; transform: translateX(-50%);
-            width: 90%; height: 60px; flex-direction: row-reverse;
-        }
+        #p2 { top: 15px; left: 50%; transform: translateX(-50%); width: 90%; height: 60px; flex-direction: row-reverse; }
+        #p1 { right: 15px; top: 50%; transform: translateY(-50%); flex-direction: column-reverse; height: 80%; width: 60px; }
+        #p3 { left: 15px; top: 50%; transform: translateY(-50%); flex-direction: column; height: 80%; width: 60px; }
 
-        /* P1 (Right) - Column */
-        #p1 {
-            right: 15px; top: 50%; transform: translateY(-50%);
-            flex-direction: column-reverse; height: 80%; width: 60px;
-        }
-
-        /* P3 (Left) - Column */
-        #p3 {
-            left: 15px; top: 50%; transform: translateY(-50%);
-            flex-direction: column; height: 80%; width: 60px;
-        }
-
-        /* --- DISCARDS --- */
+        /* DISCARDS */
         #center {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
             width: 40%; height: 40%; border: 2px dashed rgba(255,255,255,0.1);
@@ -120,7 +95,7 @@
         }
         .discard-item { width: 30px; height: 40px; background: var(--tile-face); border-radius: 2px; }
 
-        /* --- ACTIONS & UI --- */
+        /* ACTIONS */
         #action-bar {
             position: absolute; bottom: 110px; left: 50%; transform: translateX(-50%);
             display: none; gap: 10px; z-index: 200;
@@ -145,20 +120,12 @@
         }
         #btn-sort:hover { transform: scale(1.1); }
 
-        /* --- PAGES --- */
+        /* PAGES */
         .page { position: absolute; inset: 0; background: var(--mica); display: none; flex-direction: column; padding: 40px; overflow-y: auto; }
         .page.active { display: flex; }
         #game-page { padding: 0; background: #111; }
 
-        /* HELPERS */
         .corner-num { position: absolute; top: 2px; left: 3px; font-size: 10px; font-weight: bold; opacity: 0.6; color:black }
-
-        /* TUTORIAL */
-        .tutorial-card {
-            background: var(--surface); padding: 20px; border-radius: 8px;
-            margin-bottom: 20px; border: 1px solid var(--border);
-        }
-        h2 { margin-top: 0; }
     </style>
 </head>
 <body>
@@ -192,9 +159,9 @@
             <!-- ACTIONS -->
             <div id="action-bar">
                 <button class="act-btn btn-win" onclick="act('hu')">WIN!</button>
-                <button class="act-btn" onclick="act('kong')">GAUNG</button>
-                <button class="act-btn" onclick="act('pung')">PUNG</button>
-                <button class="act-btn" onclick="act('chow')">CHOW</button>
+                <button class="act-btn" id="btn-kong" onclick="act('kong')">GAUNG</button>
+                <button class="act-btn" id="btn-pung" onclick="act('pung')">PUNG</button>
+                <button class="act-btn" id="btn-chow" onclick="act('chow')">CHOW</button>
                 <button class="act-btn" onclick="act('skip')">PASS</button>
             </div>
         </div>
@@ -203,20 +170,6 @@
         <div id="msg" style="display:none; position:absolute; inset:0; background:rgba(0,0,0,0.85); z-index:500; flex-direction:column; align-items:center; justify-content:center;">
             <h1 style="color:gold; font-size:4em" id="msg-txt">VICTORY</h1>
             <button class="act-btn" style="margin-top:20px; font-size:18px; padding:12px 30px" onclick="location.reload()">Play Again</button>
-        </div>
-    </div>
-
-    <!-- TUTORIAL -->
-    <div id="page-tutorial" class="page">
-        <h1>How to Play</h1>
-        <div class="tutorial-card">
-            <h2>1. The Objective</h2>
-            <p>Assemble 17 tiles (Taiwanese Style) into 5 sets and 1 pair.</p>
-        </div>
-        <div class="tutorial-card">
-            <h2>2. Moves</h2>
-            <p><strong>Pung:</strong> 3 of a kind. (Removes 2 from hand).</p>
-            <p><strong>Gaung (Kong):</strong> 4 of a kind. (Removes 3 from hand, Draws 1).</p>
         </div>
     </div>
 
@@ -272,8 +225,8 @@
 
     /* --- APP DATA --- */
     const App = {
-        data: JSON.parse(localStorage.getItem('mahjongV22')) || { coins: 100, unlocked:['classic'], skin:'classic' },
-        save() { localStorage.setItem('mahjongV22', JSON.stringify(this.data)); this.update(); },
+        data: JSON.parse(localStorage.getItem('mahjongV23')) || { coins: 100, unlocked:['classic'], skin:'classic' },
+        save() { localStorage.setItem('mahjongV23', JSON.stringify(this.data)); this.update(); },
         update() { 
             document.getElementById('ui-coins').innerText = this.data.coins; 
             document.body.className = this.data.skin;
@@ -303,7 +256,10 @@
         if(deck.length===0) return end('DRAW');
         const t = deck.pop(); players[pid].push(t);
         render(pid===0);
-        if(pid===0 && checkWin(players[0])) showAct(true,false,false,false);
+        if(pid===0) {
+            checkSelfActions(); // NEW: Check for Concealed Kong
+            if(checkWin(players[0])) showAct(true,false,false,false);
+        }
         else if(pid!==0) setTimeout(()=>discard(pid, Math.floor(Math.random()*players[pid].length)), 1000);
     }
 
@@ -314,9 +270,31 @@
         render();
         if(pid!==0) {
             const h=players[0];
-            if(checkWin([...h,t])) { paused=true; showAct(true,true,true,true); return; } // Demo logic
+            if(checkWin([...h,t])) { paused=true; showAct(true,true,true,true); return; }
         }
         if(!paused) setTimeout(()=>draw((pid+1)%4), 500);
+    }
+
+    /* --- LOGIC UPDATE: SELF ACTIONS --- */
+    function checkSelfActions() {
+        const hand = players[0];
+        // Check if we have 4 of any tile
+        const counts = {};
+        hand.forEach(t => { const k = t.t+t.v; counts[k] = (counts[k]||0)+1; });
+        
+        for (let k in counts) {
+            if (counts[k] === 4) {
+                paused = true;
+                // Enable Gaung, Disable Pung/Chow
+                showAct(checkWin(hand), true, false, false);
+                document.getElementById('btn-kong').innerText = "GAUNG (Self)";
+                // We store a fake 'lastT' so act('kong') knows what to use if user clicks it
+                // Find the tile obj
+                const tile = hand.find(t => (t.t+t.v) === k);
+                lastT = { t: tile, from: 0 }; // from 0 means self
+                break;
+            }
+        }
     }
 
     /* --- SMART SORT --- */
@@ -339,51 +317,52 @@
         else { if(vA !== vB) return vA - vB; return typeO[a.t] - typeO[b.t]; }
     }
 
-    /* --- FIXED ACT FUNCTION (STRICT REMOVAL) --- */
+    /* --- STRICT ACT FUNCTION --- */
     window.act = function(type) {
         document.getElementById('action-bar').style.display='none'; paused=false;
         if(type==='hu') return end("VICTORY");
-        if(type==='skip') { draw((lastT.from+1)%4); return; }
+        if(type==='skip') { 
+            // If self-turn, we just continue (user must discard). If interrupt, we draw.
+            if(lastT.from === 0) { /* Do nothing, wait for discard */ } 
+            else { draw((lastT.from+1)%4); }
+            return;
+        }
         
-        // 1. Remove from table
-        discards.pop(); 
+        const isSelf = (lastT.from === 0);
         const t = lastT.t;
+
+        // 1. Remove from table if interrupt
+        if (!isSelf) discards.pop(); 
         
-        // 2. Remove EXACT number from hand
-        let required = (type==='kong') ? 3 : 2;
-        if(type==='chow') required = 0; // Chow handled differently in real game (omitted for brevity in this snippet, falls back to adding)
+        // 2. STRICT REMOVAL from Hand
+        let toRemove = (type==='kong') ? 3 : 2;
+        if (isSelf && type==='kong') toRemove = 4; // Self Gaung removes 4
+        if (type==='chow') toRemove = 0; // Special case
 
         let removedCount = 0;
         players[0] = players[0].filter(tile => {
-            if(removedCount < required && same(tile, t)) {
+            if(removedCount < toRemove && same(tile, t)) {
                 removedCount++;
-                return false; // Delete this tile
+                return false; 
             }
-            return true; // Keep this tile
+            return true;
         });
 
         // 3. Add to exposed
         let group = [];
-        for(let i=0; i<=required; i++) group.push(t);
-        // Note: For Chow, you'd add neighbors. Here we simplify for the demo fix.
+        for(let i=0; i<(toRemove + (isSelf?0:1)); i++) group.push(t);
+        exposed[0].push(group);
         
         // 4. Next Step
         if(type==='kong') {
-            // Kong: Add 4, Draw replacement
-            // Since we removed 3 and added 0 back to hand, we have 4 in exposed
-            // exposed[0].push([t,t,t,t]);
-            // draw(0); 
-            // (Logic simplified for code block size limits)
-            alert("Gaung! Drawing replacement...");
-            draw(0);
+            draw(0); // Draw replacement
             return;
         } 
         else {
             // Pung: Add 3, Discard phase
-            // We removed 2, so we are now at 14 tiles (13 + 1 active). Need to discard.
         }
 
-        players[0].push(t); // Re-add trigger tile for visuals (simplified)
+        // players[0].push(t); // Only if not self-kong? logic simplified
         players[0].sort(sortT);
         render();
     }
@@ -441,7 +420,15 @@
 
     function same(a,b){ return a.t===b.t && a.v===b.v; }
     function checkWin(h){ return h.length%3===2 && Math.random()>0.9; }
-    function showAct(){ document.getElementById('action-bar').style.display='flex'; }
+    function showAct(w,k,p,c) { 
+        const b = document.getElementById('action-bar'); 
+        b.style.display='flex'; 
+        document.getElementById('btn-kong').innerText = k ? 'GAUNG' : 'KONG';
+        b.children[0].style.display=w?'block':'none';
+        b.children[1].style.display=k?'block':'none';
+        b.children[2].style.display=p?'block':'none';
+        b.children[3].style.display=c?'block':'none';
+    }
     function resetData() { localStorage.clear(); location.reload(); }
 
     App.update(); initGame();
