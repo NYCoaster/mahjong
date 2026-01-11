@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mahjong v17: Authentic Layout</title>
+    <title>Mahjong v18: Fixed Sides</title>
     <style>
         :root {
             /* --- FLUENT VARS --- */
@@ -78,44 +78,42 @@
             border-radius: 3px;
         }
 
-        /* PORTRAIT (Top/Bottom) */
-        .t-portrait { width: 42px; height: 56px; }
-        
-        /* LANDSCAPE (Left/Right) */
-        .t-landscape { width: 56px; height: 42px; }
+        /* TILE SIZES */
+        .portrait { width: 42px; height: 56px; }   /* Top/Bottom */
+        .landscape { width: 56px; height: 42px; }  /* Left/Right */
 
-        /* --- PLAYER ZONES (PINNED TO EDGES) --- */
+        /* --- PLAYER ZONES (FIXED) --- */
         .zone { position: absolute; display: flex; gap: 2px; justify-content: center; align-items: center; }
 
-        /* P0 (Bottom) - Horizontal Row */
+        /* P0 (Bottom) - Row */
         #p0 { 
             bottom: 15px; left: 50%; transform: translateX(-50%);
-            align-items: flex-end;
+            align-items: flex-end; width: 90%; height: 60px;
         }
         #p0 .tile:hover { transform: translateY(-15px); border-color: var(--accent); }
 
-        /* P2 (Top) - Horizontal Row */
+        /* P2 (Top) - Row */
         #p2 {
             top: 15px; left: 50%; transform: translateX(-50%);
-            flex-direction: row-reverse;
+            width: 90%; height: 60px;
         }
 
-        /* P1 (Right) - Vertical Column */
+        /* P1 (Right) - Column */
         #p1 {
             right: 15px; top: 50%; transform: translateY(-50%);
-            flex-direction: column-reverse;
+            flex-direction: column; height: 80%; width: 60px;
         }
 
-        /* P3 (Left) - Vertical Column */
+        /* P3 (Left) - Column */
         #p3 {
             left: 15px; top: 50%; transform: translateY(-50%);
-            flex-direction: column;
+            flex-direction: column; height: 80%; width: 60px;
         }
 
         /* --- DISCARDS --- */
         #center {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            width: 35%; height: 35%; border: 2px dashed rgba(255,255,255,0.1);
+            width: 40%; height: 40%; border: 2px dashed rgba(255,255,255,0.1);
             border-radius: 12px; padding: 10px;
             display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px;
             align-content: center; justify-content: center;
@@ -250,8 +248,8 @@
 
     /* --- APP DATA --- */
     const App = {
-        data: JSON.parse(localStorage.getItem('mahjongV17')) || { coins: 100, unlocked:['classic'], skin:'classic' },
-        save() { localStorage.setItem('mahjongV17', JSON.stringify(this.data)); this.update(); },
+        data: JSON.parse(localStorage.getItem('mahjongV18')) || { coins: 100, unlocked:['classic'], skin:'classic' },
+        save() { localStorage.setItem('mahjongV18', JSON.stringify(this.data)); this.update(); },
         update() { 
             document.getElementById('ui-coins').innerText = this.data.coins; 
             document.body.className = this.data.skin;
@@ -318,10 +316,10 @@
             el.innerHTML=SVG.get(t.t,t.v); document.getElementById('center').appendChild(el);
         });
 
-        // PLAYER 0 (Human)
+        // PLAYER 0 (Human) - Row
         const p0=document.getElementById('p0'); p0.innerHTML='';
         players[0].forEach((t,i)=>{
-            let el=document.createElement('div'); el.className='tile t-portrait';
+            let el=document.createElement('div'); el.className='tile portrait';
             if(fresh && i===players[0].length-1) el.style.marginLeft='15px';
             el.innerHTML=SVG.get(t.t,t.v);
             el.onclick=()=>{if(!paused && players[0].length%3===2) discard(0,i)};
@@ -331,7 +329,8 @@
         // BOTS
         [1,2,3].forEach(pid=>{
             const z=document.getElementById('p'+pid); z.innerHTML='';
-            const cls = (pid===1 || pid===3) ? 't-landscape' : 't-portrait';
+            // P1/P3 = Landscape, P2 = Portrait
+            const cls = (pid===1 || pid===3) ? 'landscape' : 'portrait';
             players[pid].forEach(()=>{
                 let el=document.createElement('div'); el.className=`tile-back ${cls}`;
                 z.appendChild(el);
