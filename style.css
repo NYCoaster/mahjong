@@ -1,0 +1,35 @@
+body { margin: 0; background: #222; font-family: sans-serif; overflow: hidden; }
+#game-table { 
+    position: relative; width: 100vw; height: 100vh; 
+    background: #006400; /* Mahjong Table Green */
+    display: flex; justify-content: center; align-items: center; 
+}
+
+/* Hands Positioning */
+.hand { position: absolute; display: flex; gap: 2px; }
+.opponent { background: rgba(0,0,0,0.2); padding: 5px; border-radius: 4px; }
+
+#hand-top { top: 20px; transform: rotate(180deg); }
+#hand-left { left: 20px; flex-direction: column; }
+#hand-right { right: 20px; flex-direction: column; }
+#hand-player { bottom: 20px; z-index: 10; }
+
+/* Tile Styling */
+.tile {
+    width: 40px; height: 56px; background: #fff; 
+    border: 1px solid #ccc; border-radius: 4px;
+    display: flex; justify-content: center; align-items: center;
+    font-weight: bold; font-size: 20px; cursor: pointer;
+    box-shadow: 2px 2px 4px rgba(0,0,0,0.4);
+    user-select: none;
+}
+.tile.face-down { background: #1e88e5; border: 2px solid #fff; }
+
+/* Suits Colors */
+.suit-bamboo { color: #008800; }
+.suit-dots { color: #0000cc; }
+.suit-chars { color: #cc0000; }
+
+#center-area { width: 300px; height: 300px; background: rgba(0,0,0,0.1); border-radius: 10px; padding: 10px; display: flex; flex-direction: column; }
+#discard-pile { display: flex; flex-wrap: wrap; gap: 2px; margin-top: 10px; }
+#status-text { color: white; text-align: center; font-size: 1.2rem; font-weight: bold; }
