@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>Mahjong v23: Self-Gaung</title>
     <style>
         :root {
@@ -64,6 +64,7 @@
             border-radius: 4px; display: flex; justify-content: center; align-items: center;
             position: relative; cursor: pointer; transition: transform 0.1s;
             box-shadow: 2px 3px 5px rgba(0,0,0,0.3);
+            overflow: hidden;
         }
         .tile svg { width: 100%; height: 100%; display: block; }
         
@@ -109,28 +110,366 @@
         }
         .act-btn:hover { background: var(--accent); color: white; transform: scale(1.05); }
         .btn-win { background: #d32f2f; color: white; border: none; }
+
+        /* SORT BUTTON */
+        #btn-sort {
+            position: absolute; bottom: 130px; right: 20px; z-index: 300;
+            width: 56px; height: 56px; border-radius: 50%;
+            background: var(--accent); color: white; border: none;
+            font-size: 24px; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            display: flex; align-items: center; justify-content: center;
+        }
+        #btn-sort:hover { transform: scale(1.1); }
+
+        /* PAGES */
+        .page { position: absolute; inset: 0; background: var(--mica); display: none; flex-direction: column; padding: 40px; overflow-y: auto; }
+        .page.active { display: flex; }
+        #game-page { padding: 0; background: #111; }
+
+        .corner-num { position: absolute; top: 2px; left: 3px; font-size: 10px; font-weight: bold; opacity: 0.9; color: var(--text); z-index: 2; pointer-events: none; }
     </style>
 </head>
 <body>
-    <script>
-        function initGame() {
-            const deck = [];
-            ['dots', 'bamboo', 'chars'].forEach(t => {
-                for (let i = 1; i <= 9; i++) {
-                    for (let k = 0; k < 4; k++) {
-                        deck.push({ t, v: i });
-                    }
-                }
-            });
-            ['east', 'south', 'west', 'north', 'red', 'green', 'white'].forEach(v => {
-                for (let k = 0; k < 4; k++) {
-                    deck.push({ t: 'honor', v });
-                }
-            });
 
-            console.log(deck); // Verifying deck integrity
+<div id="sidebar">
+    <h2 style="color:var(--accent); margin:0 0 10px 0">🀄 Mahjong</h2>
+    <div class="nav-item active" onclick="nav('game', event)">▶ Play Game</div>
+    <div class="nav-item" onclick="nav('shop', event)">🛒 Skin Shop</div>
+    <div class="nav-item" onclick="nav('tutorial', event)">📖 How to Play</div>
+    <div class="nav-item" onclick="nav('settings', event)">⚙ Settings</div>
+    <div style="flex:1"></div>
+    <div style="background:rgba(0,0,0,0.05); padding:15px; border-radius:8px">
+        <div style="font-size:11px; opacity:0.6">COINS</div>
+        <div style="font-size:24px; font-weight:bold" id="ui-coins">0</div>
+    </div>
+</div>
+
+<div id="main">
+    <!-- GAME -->
+    <div id="page-game" class="page active">
+        <div id="table">
+            <div id="center"></div>
+            <div id="p0" class="zone"></div>
+            <div id="p1" class="zone"></div>
+            <div id="p2" class="zone"></div>
+            <div id="p3" class="zone"></div>
+
+            <!-- SORT BTN -->
+            <button id="btn-sort" onclick="toggleSort()" title="Toggle Sort Mode">🔃</button>
+
+            <!-- ACTIONS -->
+            <div id="action-bar">
+                <button class="act-btn btn-win" onclick="act('hu')">WIN!</button>
+                <button class="act-btn" id="btn-kong" onclick="act('kong')">GAUNG</button>
+                <button class="act-btn" id="btn-pung" onclick="act('pung')">PUNG</button>
+                <button class="act-btn" id="btn-chow" onclick="act('chow')">CHOW</button>
+                <button class="act-btn" onclick="act('skip')">PASS</button>
+            </div>
+        </div>
+
+        <!-- MSG -->
+        <div id="msg" style="display:none; position:absolute; inset:0; background:rgba(0,0,0,0.85); z-index:500; flex-direction:column; align-items:center; justify-content:center;">
+            <h1 style="color:gold; font-size:4em" id="msg-txt">VICTORY</h1>
+            <button class="act-btn" style="margin-top:20px; font-size:18px; padding:12px 30px" onclick="location.reload()">Play Again</button>
+        </div>
+    </div>
+
+    <!-- SHOP -->
+    <div id="page-shop" class="page">
+        <h1>Skin Shop</h1>
+        <div id="shop-grid" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(160px,1fr)); gap:15px"></div>
+    </div>
+
+    <!-- SETTINGS -->
+    <div id="page-settings" class="page">
+        <h1>Settings</h1>
+        <button class="act-btn" style="background:#d32f2f; color:white; width:200px" onclick="resetData()">Reset Data</button>
+    </div>
+</div>
+
+<script>
+    /* --- SVG TILE ENGINE --- */
+    const SVG = {
+        // include the xmlns and preserveAspectRatio so <svg> is created in the SVG namespace
+        base: c => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 130" preserveAspectRatio="xMidYMid meet">${c}</svg>`,
+        circle: (x,y,r,c) => `<circle cx="${x}" cy="${y}" r="${r}" fill="${c}"/>`,
+        rect: (x,y,w,h,c) => `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="${c}"/>`,
+        get: (t, v) => {
+            let g=''; const R='#d32f2f', G='#2e7d32', B='#1565c0';
+            let num = '';
+            if(t==='dots') {
+                if(v==1) g=SVG.circle(50,65,35,R)+SVG.circle(50,65,20,'white')+SVG.circle(50,65,10,R);
+                else if(v==2) g=SVG.circle(50,35,18,G)+SVG.circle(50,95,18,B);
+                else if(v==3) g=SVG.circle(25,30,15,B)+SVG.circle(50,65,15,R)+SVG.circle(75,100,15,G);
+                else if(v==4) g=SVG.circle(30,30,15,B)+SVG.circle(70,30,15,G)+SVG.circle(30,100,15,G)+SVG.circle(70,100,15,B);
+                else if(v==5) g=SVG.circle(25,25,12,B)+SVG.circle(75,25,12,G)+SVG.circle(50,65,12,R)+SVG.circle(25,105,12,G)+SVG.circle(75,105,12,B);
+                else g=`<text x="50" y="85" font-size="60" text-anchor="middle" fill="${B}" font-weight="bold">${v}</text>`;
+                // corner number for suits
+                num = `<span class="corner-num">${v}</span>`;
+            } 
+            else if(t==='bamboo') {
+                if(v==1) g=`<path d="M50,45 Q30,65 20,55 Q40,35 50,25 Q60,35 80,55 Q70,65 50,45 M50,65 L50,115 M30,115 L70,115" stroke="${G}" stroke-width="5" fill="none"/>`;
+                else g=`<rect x="35" y="25" width="10" height="80" fill="${G}"/><rect x="55" y="25" width="10" height="80" fill="${G}"/>`;
+                // corner number for suits
+                num = `<span class="corner-num">${v}</span>`;
+            }
+            else if(t==='chars') {
+                const ch=['一','二','三','四','五','六','七','八','九'];
+                g=`<text x="50" y="60" font-size="45" text-anchor="middle" fill="#000">${ch[v-1]}</text><text x="50" y="115" font-size="40" text-anchor="middle" fill="${R}">萬</text>`;
+                num=`<span class="corner-num">${v}</span>`;
+            }
+            else {
+                const h={'east':'東','south':'南','west':'西','north':'北','red':'中','green':'發','white':' '};
+                const col=(v=='red'||v=='white')?R:(v=='green'?G:'#000');
+                g=`<text x="50" y="95" font-size="70" text-anchor="middle" fill="${col}">${h[v]}</text>`;
+                if(v=='white') g+=`<rect x="10" y="10" width="80" height="110" stroke="${B}" stroke-width="5" fill="none"/>`;
+                num=`<span class="corner-num">${String(v)[0].toUpperCase()}</span>`;
+            }
+            return num + SVG.base(g);
         }
-        initGame();
-    </script>
+    };
+
+    /* --- APP DATA --- */
+    const App = {
+        data: JSON.parse(localStorage.getItem('mahjongV23')) || { coins: 100, unlocked:['classic'], skin:'classic' },
+        save() { localStorage.setItem('mahjongV23', JSON.stringify(this.data)); this.update(); },
+        update() { 
+            document.getElementById('ui-coins').innerText = this.data.coins; 
+            document.body.className = this.data.skin;
+        }
+    };
+    const SKINS = { 
+        'classic':{name:'Classic Green', cost:0}, 
+        'skin-neon':{name:'Cyber Neon', cost:200}, 
+        'skin-gold':{name:'Emperor Gold', cost:500} 
+    };
+
+    /* --- GAME ENGINE --- */
+    let deck=[], players=[], discards=[], exposed=[[],[],[],[]], turn=0, lastT=null, paused=false, sortMode='suit';
+
+    function initGame() {
+        deck=[];
+        ['dots','bamboo','chars'].forEach(t=>{for(let i=1;i<=9;i++)for(let k=0;k<4;k++)deck.push({t,v:i})});
+        ['east','south','west','north','red','green','white'].forEach(v=>{for(let k=0;k<4;k++)deck.push({t:'honor',v})});
+        deck.sort(()=>Math.random()-0.5);
+        players=[[],[],[],[]]; discards=[];
+        exposed = [[],[],[],[]];
+        for(let i=0;i<16;i++) for(let p=0;p<4;p++) players[p].push(deck.pop());
+        players[0].sort(sortT);
+        render(); setTimeout(()=>draw(0), 800);
+    }
+
+    function draw(pid) {
+        if(deck.length===0) return end('DRAW');
+        const t = deck.pop(); players[pid].push(t);
+        render(pid===0);
+        if(pid===0) {
+            checkSelfActions(); // Check for Concealed Kong
+            if(checkWin(players[0])) showAct(true,false,false,false);
+        }
+        else if(pid!==0) setTimeout(()=>discard(pid, Math.floor(Math.random()*players[pid].length)), 1000);
+    }
+
+    function discard(pid, idx) {
+        const t = players[pid].splice(idx,1)[0];
+        lastT = {t, from:pid}; discards.push(t);
+        if(pid===0) players[0].sort(sortT);
+        render();
+        if(pid!==0) {
+            const h=players[0];
+            if(checkWin([...h,t])) { paused=true; showAct(true,true,true,true); return; }
+        }
+        if(!paused) setTimeout(()=>draw((pid+1)%4), 500);
+    }
+
+    /* --- LOGIC UPDATE: SELF ACTIONS --- */
+    function checkSelfActions() {
+        const hand = players[0];
+        // Check if we have 4 of any tile
+        const counts = {};
+        hand.forEach(t => { const k = t.t + String(t.v); counts[k] = (counts[k]||0)+1; });
+        
+        for (let k in counts) {
+            if (counts[k] === 4) {
+                paused = true;
+                // Enable Gaung, Disable Pung/Chow
+                showAct(checkWin(hand), true, false, false);
+                document.getElementById('btn-kong').innerText = "GAUNG (Self)";
+                // Find the tile obj
+                const tile = hand.find(t => (t.t + String(t.v)) === k);
+                lastT = { t: tile, from: 0 }; // from 0 means self
+                break;
+            }
+        }
+    }
+
+    /* --- SMART SORT --- */
+    window.toggleSort = function() {
+        sortMode = (sortMode === 'suit') ? 'number' : 'suit';
+        players[0].sort(sortT);
+        render();
+        document.getElementById('btn-sort').innerText = (sortMode === 'suit') ? '🔃' : '🔢';
+    };
+
+    function sortT(a,b){
+        const typeO = {'dots':0, 'bamboo':1, 'chars':2, 'honor':3};
+        const getV = (t) => {
+            if(typeof t.v === 'number') return t.v;
+            const h={'east':31,'south':32,'west':33,'north':34,'red':35,'green':36,'white':37};
+            return h[t.v] || 40;
+        };
+        const vA = getV(a); const vB = getV(b);
+        if(sortMode === 'suit') { if(a.t !== b.t) return typeO[a.t] - typeO[b.t]; return vA - vB; }
+        else { if(vA !== vB) return vA - vB; return typeO[a.t] - typeO[b.t]; }
+    }
+
+    /* --- STRICT ACT FUNCTION --- */
+    window.act = function(type) {
+        document.getElementById('action-bar').style.display='none'; paused=false;
+        if(type==='hu') return end("VICTORY");
+        if(type==='skip') { 
+            if(lastT && lastT.from === 0) { /* Do nothing, wait for discard */ } 
+            else if(lastT) { draw((lastT.from+1)%4); }
+            return;
+        }
+        
+        const isSelf = (lastT && lastT.from === 0);
+        const t = lastT ? lastT.t : null;
+        if(!t) return;
+
+        // 1. Remove from table if interrupt
+        if (!isSelf) discards.pop(); 
+        
+        // 2. STRICT REMOVAL from Hand
+        let toRemove = (type==='kong') ? 3 : 2;
+        if (isSelf && type==='kong') toRemove = 4; // Self Gaung removes 4
+        if (type==='chow') toRemove = 0; // Special case (chow uses sequence logic - simplified here)
+
+        let removedCount = 0;
+        players[0] = players[0].filter(tile => {
+            if(removedCount < toRemove && same(tile, t)) {
+                removedCount++;
+                return false; 
+            }
+            return true;
+        });
+
+        // 3. Add to exposed
+        let group = [];
+        // for interrupts, include the discarded tile as well
+        const groupCount = toRemove + (isSelf ? 0 : 1);
+        for(let i=0; i<groupCount; i++) group.push(t);
+        exposed[0].push(group);
+        
+        // 4. Next Step
+        if(type==='kong') {
+            // After forming a kong, draw replacement
+            draw(0);
+            return;
+        } 
+        else {
+            // Pung/Chow: simplified handling; player then discards
+        }
+
+        players[0].sort(sortT);
+        render();
+    };
+
+    function render(fresh=false) {
+        document.getElementById('center').innerHTML='';
+        discards.forEach(t=>{
+            let el=document.createElement('div'); el.className='discard-item';
+            el.innerHTML=SVG.get(t.t,t.v); document.getElementById('center').appendChild(el);
+        });
+        const p0=document.getElementById('p0'); p0.innerHTML='';
+        players[0].forEach((t,i)=>{
+            let el=document.createElement('div'); el.className='tile portrait';
+            if(fresh && i===players[0].length-1) el.style.marginLeft='15px';
+            el.innerHTML=SVG.get(t.t,t.v);
+            el.onclick=()=>{if(!paused && players[0].length%3===2) discard(0,i)};
+            p0.appendChild(el);
+        });
+        [1,2,3].forEach(pid=>{
+            const z=document.getElementById('p'+pid); z.innerHTML='';
+            const cls = (pid===1 || pid===3) ? 'landscape' : 'portrait';
+            players[pid].forEach(()=>{ let el=document.createElement('div'); el.className=`tile-back ${cls}`; z.appendChild(el); });
+        });
+
+        // Render exposed melds for player 0 (simple horizontal display)
+        // remove existing container if present
+        const existing = document.getElementById('exposed-0');
+        if(existing) existing.remove();
+        if(exposed[0] && exposed[0].length) {
+            const container = document.createElement('div');
+            container.id = 'exposed-0';
+            container.style.position = 'absolute';
+            container.style.bottom = '85px';
+            container.style.left = '50%';
+            container.style.transform = 'translateX(-50%)';
+            container.style.display = 'flex';
+            container.style.gap = '6px';
+            container.style.zIndex = 150;
+            exposed[0].forEach(group=>{
+                const gwrap = document.createElement('div');
+                gwrap.style.display = 'flex';
+                gwrap.style.gap = '2px';
+                group.forEach(tile=>{
+                    const el=document.createElement('div'); el.className='tile portrait';
+                    el.style.boxShadow = 'none';
+                    el.innerHTML = SVG.get(tile.t,tile.v);
+                    gwrap.appendChild(el);
+                });
+                container.appendChild(gwrap);
+            });
+            document.getElementById('table').appendChild(container);
+        }
+    }
+
+    function end(txt) {
+        document.getElementById('msg').style.display='flex'; document.getElementById('msg-txt').innerText=txt;
+        if(txt==='VICTORY'){ App.data.coins+=100; App.save(); }
+    }
+
+    function nav(page, ev) {
+        document.querySelectorAll('.page').forEach(e=>e.classList.remove('active'));
+        document.querySelectorAll('.nav-item').forEach(e=>e.classList.remove('active'));
+        const pageEl = document.getElementById('page-'+page);
+        if(pageEl) pageEl.classList.add('active');
+        if(ev && ev.target) ev.target.classList.add('active');
+        if(page==='shop') renderShop();
+    }
+
+    function renderShop() {
+        const g=document.getElementById('shop-grid'); g.innerHTML='';
+        for(let k in SKINS) {
+            let s=SKINS[k]; let owned=App.data.unlocked.includes(k); let act=App.data.skin===k;
+            let el=document.createElement('div');
+            el.style.cssText = `background:var(--surface); padding:20px; border-radius:8px; border:1px solid var(--border); text-align:center; cursor:pointer; ${act?'border-color:var(--accent); background:rgba(0,0,0,0.03);':''}`;
+            el.innerHTML=`<h3 style="margin:6px 0">${s.name}</h3><p style="margin:6px 0">${owned?(act?'ACTIVE':'OWNED'):s.cost+' Coins'}</p>`;
+            el.onclick=()=>{ 
+                if(owned) App.data.skin=k; 
+                else if(App.data.coins>=s.cost) { App.data.coins-=s.cost; App.data.unlocked.push(k); App.data.skin=k; }
+                else return alert('Not enough coins');
+                App.save(); renderShop();
+            };
+            g.appendChild(el);
+        }
+    }
+
+    function same(a,b){ return a.t===b.t && a.v===b.v; }
+    function checkWin(h){ return h.length%3===2 && Math.random()>0.9; }
+    function showAct(w,k,p,c) { 
+        const b = document.getElementById('action-bar'); 
+        b.style.display='flex'; 
+        document.getElementById('btn-kong').innerText = k ? 'GAUNG' : 'KONG';
+        b.children[0].style.display=w?'block':'none';
+        b.children[1].style.display=k?'block':'none';
+        b.children[2].style.display=p?'block':'none';
+        b.children[3].style.display=c?'block':'none';
+    }
+    function resetData() { localStorage.clear(); location.reload(); }
+
+    App.update(); initGame();
+</script>
 </body>
 </html>
