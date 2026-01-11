@@ -3,589 +3,502 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mahjong Legends v7</title>
+    <title>Mahjong v8: Stable Edition</title>
     <style>
         :root {
             --bg-color: #2d5e3e;
-            --table-border: #5c3a21;
-            --tile-bg: #fff;
-            --tile-color: #000;
-            --tile-border: #999;
-            --accent: gold;
-            --shadow: rgba(0,0,0,0.5);
+            --table-color: #3a6b4a;
+            --accent: #ffd700;
+            --text-color: white;
         }
 
         body {
             margin: 0;
-            background-color: #111;
-            color: white;
+            background-color: #121212;
+            color: var(--text-color);
             font-family: 'Segoe UI', Tahoma, sans-serif;
             display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
+            flex-direction: column;
+            height: 100vh;
             overflow: hidden;
             user-select: none;
         }
 
-        /* --- SKINS --- */
-        body.skin-neon {
-            --bg-color: #050510;
-            --table-border: #00f3ff;
-            --tile-bg: #1a1a2e;
-            --tile-color: #00f3ff;
-            --tile-border: #ff00ff;
-            --accent: #ff00ff;
-            --shadow: rgba(0, 243, 255, 0.2);
+        /* --- 1. TOP BAR (HUD) - Fixed Layout --- */
+        #top-bar {
+            height: 60px;
+            background: #1a1a1a;
+            border-bottom: 2px solid #444;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 30px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            z-index: 200;
         }
-        body.skin-neon .tile { text-shadow: 0 0 5px var(--tile-color); }
-        body.skin-neon #game-table { box-shadow: 0 0 50px var(--table-border); }
+        .hud-stat { font-size: 20px; font-weight: bold; display: flex; align-items: center; gap: 10px; }
+        .hud-icon { font-size: 24px; }
 
-        body.skin-wood {
-            --bg-color: #5d4037;
-            --table-border: #3e2723;
-            --tile-bg: #fff8e1;
-            --tile-color: #3e2723;
-            --tile-border: #8d6e63;
-            --accent: #ffd700;
+        /* --- 2. GAME AREA --- */
+        #game-container {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            background: #222;
         }
-        body.skin-wood .tile-back { background: #4a2c2a !important; border-color: #5d4037 !important; }
 
-        /* --- GAME TABLE --- */
         #game-table {
-            position: relative; width: 95vh; height: 95vh;
-            max-width: 900px; max-height: 900px;
-            border: 15px solid var(--table-border);
-            border-radius: 40px; background: var(--bg-color);
-            box-shadow: inset 0 0 100px rgba(0,0,0,0.8);
-            display: none;
+            position: relative;
+            width: 90vh; height: 90vh;
+            max-width: 800px; max-height: 800px;
+            background: var(--bg-color);
+            border: 15px solid #5c3a21;
+            border-radius: 40px;
+            box-shadow: inset 0 0 120px rgba(0,0,0,0.6);
+            display: none; /* Hidden by default */
         }
 
-        /* --- TILES --- */
+        /* --- 3. TILES & ANIMATIONS --- */
         .tile {
-            width: 42px; height: 56px;
-            background: var(--tile-bg); color: var(--tile-color);
-            border: 1px solid var(--tile-border); border-radius: 6px;
+            width: 42px; height: 58px;
+            background: #fff; color: #000;
+            border: 1px solid #999; border-radius: 5px;
             display: flex; justify-content: center; align-items: center;
-            font-size: 34px; box-shadow: 3px 5px 8px var(--shadow);
-            position: relative; transition: transform 0.1s;
-            z-index: 1;
+            font-size: 32px;
+            box-shadow: 3px 4px 8px rgba(0,0,0,0.4);
+            position: relative;
+            transition: transform 0.2s, margin 0.2s;
         }
         .tile-back {
-            background: #1e824c; border: 1px solid rgba(255,255,255,0.2);
+            background: #1e824c; border-color: #4da36e;
             color: rgba(255,255,255,0.1);
         }
-        /* Special class for the 14th drawn tile */
+        
+        /* The separated draw tile */
         .fresh-tile {
             margin-left: 25px !important;
-            border-left: 4px solid var(--accent);
+            animation: slideLeft 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
+        @keyframes slideLeft { from { transform: translateX(30px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
 
-        /* --- ZONES --- */
+        /* --- 4. SKINS --- */
+        body.skin-neon {
+            --bg-color: #0a0a12; --table-color: #111; --accent: #0ff;
+        }
+        body.skin-neon .tile { background: #1a1a2e; color: #0ff; border: 1px solid #f0f; box-shadow: 0 0 10px rgba(0, 243, 255, 0.2); }
+        body.skin-neon #game-table { border-color: #0ff; box-shadow: 0 0 50px #0ff; }
+
+        body.skin-gold { --bg-color: #4a0404; --accent: gold; }
+        body.skin-gold .tile { background: #fffbe6; color: #5d4037; border: 1px solid gold; }
+
+        /* --- 5. PLAYER ZONES --- */
         .hand-container { position: absolute; display: flex; gap: 8px; z-index: 10; }
         .exposed-tiles { display: flex; gap: 6px; }
-        .hand-tiles { display: flex; gap: 0px; }
-        .meld { display: flex; gap: 0; padding: 0 4px; background: rgba(0,0,0,0.2); border-radius: 4px; }
+        .hand-tiles { display: flex; gap: 1px; }
+        .meld { display: flex; gap: 1px; padding: 0 4px; background: rgba(0,0,0,0.2); border-radius: 4px; }
 
-        /* P0 (Human) - Fixed overlapping issue */
-        #p0-area { 
-            bottom: 20px; left: 50%; 
-            transform: translateX(-50%); 
-            align-items: flex-end; 
-            z-index: 100; /* Highest priority */
-        }
-        #p0-hand .tile:hover { transform: translateY(-20px); border-color: var(--accent); z-index: 110; }
+        /* P0 (Human) */
+        #p0-area { bottom: 20px; left: 50%; transform: translateX(-50%); align-items: flex-end; }
+        #p0-hand .tile { cursor: pointer; }
+        #p0-hand .tile:hover { transform: translateY(-20px); border-color: var(--accent); z-index: 100; }
 
-        /* Bots */
-        #p1-area { right: 25px; top: 50%; transform: translateY(-50%); flex-direction: column-reverse; align-items: flex-end; }
+        /* Bots - Rotate for side view */
+        #p1-area { right: 30px; top: 50%; transform: translateY(-50%); flex-direction: column-reverse; align-items: flex-end; }
         #p1-hand, #p1-exposed { flex-direction: column; }
-        #p1-area .tile { transform: rotate(-90deg); width: 56px; height: 42px; }
+        #p1-area .tile { transform: rotate(-90deg); width: 58px; height: 42px; }
 
-        #p2-area { top: 25px; left: 50%; transform: translateX(-50%); flex-direction: row-reverse; align-items: flex-start; }
+        #p2-area { top: 20px; left: 50%; transform: translateX(-50%); flex-direction: row-reverse; align-items: flex-start; }
         #p2-area .tile { transform: rotate(180deg); }
 
-        #p3-area { left: 25px; top: 50%; transform: translateY(-50%); flex-direction: column; align-items: flex-start; }
+        #p3-area { left: 30px; top: 50%; transform: translateY(-50%); flex-direction: column; align-items: flex-start; }
         #p3-hand, #p3-exposed { flex-direction: column; }
-        #p3-area .tile { transform: rotate(90deg); width: 56px; height: 42px; }
+        #p3-area .tile { transform: rotate(90deg); width: 58px; height: 42px; }
 
-        /* --- DISCARD PILE (MOVED UP) --- */
+        /* Discard Pile */
         #discard-pile {
-            position: absolute; 
-            top: 35%; /* Moved up from 50% to avoid blocking hand */
-            left: 50%;
-            transform: translate(-50%, -50%);
-            display: grid; grid-template-columns: repeat(10, 1fr);
-            gap: 4px;
-            z-index: 5;
-            pointer-events: none;
+            position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%);
+            display: grid; grid-template-columns: repeat(11, 1fr);
+            gap: 4px; z-index: 5;
         }
 
-        /* --- UI ELEMENTS --- */
-        .screen { 
-            position: absolute; inset: 0; background: rgba(0,0,0,0.9); 
-            display: flex; flex-direction: column; align-items: center; justify-content: center; 
-            z-index: 500; transition: opacity 0.5s;
-        }
-        .hidden { opacity: 0; pointer-events: none; }
-
-        .menu-btn {
-            padding: 15px 50px; margin: 10px; font-size: 24px;
-            background: #333; color: white; border: 2px solid #666;
-            cursor: pointer; text-transform: uppercase; letter-spacing: 2px;
-            transition: 0.2s;
-        }
-        .menu-btn:hover { background: var(--accent); color: black; border-color: white; box-shadow: 0 0 20px var(--accent); }
-
-        #hud-top {
-            position: absolute; top: 20px; right: 20px; 
-            display: flex; gap: 20px; font-size: 20px; font-weight: bold;
-            background: rgba(0,0,0,0.6); padding: 10px 20px; border-radius: 20px;
-        }
-
-        #actions {
-            position: absolute; bottom: 140px; left: 50%; transform: translateX(-50%);
-            display: none; gap: 15px; z-index: 200;
-        }
-        .action-btn {
-            padding: 15px 30px; font-size: 20px; border: none; border-radius: 50px;
-            cursor: pointer; font-weight: bold; box-shadow: 0 5px 15px rgba(0,0,0,0.5);
-            animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
-        @keyframes popIn { from { transform: scale(0); } to { transform: scale(1); } }
+        /* --- 6. MENUS --- */
+        .screen { position: absolute; inset: 0; background: rgba(0,0,0,0.95); z-index: 500; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .hidden { display: none !important; }
         
-        .btn-hu { background: #e74c3c; color: white; }
-        .btn-kong { background: #f1c40f; color: black; }
-        .btn-pung { background: #3498db; color: white; }
-        .btn-chow { background: #2ecc71; color: black; }
-        .btn-skip { background: #95a5a6; color: white; }
-
-        #big-msg {
-            position: absolute; top: 45%; left: 50%; transform: translate(-50%, -50%) scale(0.5);
-            font-size: 6em; color: var(--accent); text-shadow: 0 0 30px red;
-            opacity: 0; pointer-events: none; transition: 0.2s;
-            z-index: 300;
+        h1 { color: var(--accent); font-size: 3.5em; text-shadow: 0 0 20px var(--accent); margin-bottom: 10px; }
+        .menu-btn { 
+            padding: 15px 60px; margin: 10px; font-size: 22px; 
+            background: #333; color: white; border: 2px solid #666;
+            cursor: pointer; transition: 0.2s; text-transform: uppercase;
         }
-        #big-msg.show { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+        .menu-btn:hover { background: var(--accent); color: black; border-color: white; }
 
+        /* Actions */
+        #actions { position: absolute; bottom: 25%; left: 50%; transform: translateX(-50%); display: none; gap: 15px; z-index: 200; }
+        .action-btn { padding: 15px 30px; border-radius: 50px; border: none; font-weight: bold; font-size: 18px; cursor: pointer; box-shadow: 0 5px 15px black; }
+
+        #big-msg { 
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0); 
+            font-size: 5em; color: var(--accent); text-shadow: 0 0 20px red; transition: 0.3s;
+            pointer-events: none; z-index: 300;
+        }
+        #big-msg.show { transform: translate(-50%, -50%) scale(1); }
     </style>
 </head>
 <body>
 
-<!-- AUDIO SYSTEM -->
-<div id="audio-status" style="display:none"></div>
+<!-- TOP HUD (Outside Game Table) -->
+<div id="top-bar">
+    <div class="hud-stat"><span class="hud-icon">🀄</span> <span id="wall-count">136</span></div>
+    <div class="hud-stat"><span class="hud-icon">💰</span> <span id="coins-display">0</span></div>
+    <button onclick="showMenu()" style="background:#333; color:#aaa; border:1px solid #555; padding:5px 15px; cursor:pointer">MENU</button>
+</div>
 
-<!-- MENU -->
+<div id="game-container">
+    <div id="game-table">
+        <!-- CENTER NOTIFICATION -->
+        <div id="big-msg">WIN!</div>
+        
+        <!-- DISCARDS -->
+        <div id="discard-pile"></div>
+
+        <!-- PLAYER ACTIONS -->
+        <div id="actions">
+            <button class="action-btn" style="background:red; color:white" onclick="playerAction('hu')">HU! (WIN)</button>
+            <button class="action-btn" style="background:gold; color:black" onclick="playerAction('kong')">KONG</button>
+            <button class="action-btn" style="background:cyan; color:black" onclick="playerAction('pung')">PUNG</button>
+            <button class="action-btn" style="background:lime; color:black" onclick="playerAction('chow')">CHOW</button>
+            <button class="action-btn" style="background:gray; color:white" onclick="playerAction('skip')">PASS</button>
+        </div>
+
+        <!-- HANDS -->
+        <div id="p0-area" class="hand-container">
+            <div id="p0-exposed" class="exposed-tiles"></div>
+            <div id="p0-hand" class="hand-tiles"></div>
+        </div>
+        <div id="p1-area" class="hand-container"><div id="p1-exposed" class="exposed-tiles"></div><div id="p1-hand" class="hand-tiles"></div></div>
+        <div id="p2-area" class="hand-container"><div id="p2-exposed" class="exposed-tiles"></div><div id="p2-hand" class="hand-tiles"></div></div>
+        <div id="p3-area" class="hand-container"><div id="p3-exposed" class="exposed-tiles"></div><div id="p3-hand" class="hand-tiles"></div></div>
+    </div>
+</div>
+
+<!-- MENUS -->
 <div id="main-menu" class="screen">
-    <h1 style="color:var(--accent)">MAHJONG LEGENDS v7</h1>
-    <div id="coins-display" style="color:#888; margin-bottom:20px">Coins: 0</div>
-    <button class="menu-btn" onclick="startGame()">PLAY GAME</button>
-    <button class="menu-btn" onclick="openStore()">SKINS</button>
-    <button class="menu-btn" onclick="openTutorial()">TUTORIAL</button>
-</div>
-
-<!-- STORE -->
-<div id="store-screen" class="screen hidden">
-    <h2>SKIN SHOP</h2>
-    <div id="store-grid" style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:20px"></div>
-    <button class="menu-btn" onclick="showMenu()" style="margin-top:30px">BACK</button>
-</div>
-
-<!-- TUTORIAL -->
-<div id="tutorial-screen" class="screen hidden">
-    <div style="background:rgba(0,0,0,0.8); padding:40px; max-width:600px">
-        <h2>How to Play</h2>
-        <p>1. <strong>Draw & Discard:</strong> Keep 16 tiles. Draw one, discard one.</p>
-        <p>2. <strong>Pung (碰):</strong> Triplet (3 same). Any player.</p>
-        <p>3. <strong>Chow (吃):</strong> Sequence (e.g. 2-3-4). Left player only.</p>
-        <p>4. <strong>Kong (杠):</strong> Quad (4 same). Draw replacement.</p>
-        <p>5. <strong>Hu (胡):</strong> Win! 4 sets + 1 pair.</p>
-        <button class="menu-btn" onclick="showMenu()">OK</button>
-    </div>
-</div>
-
-<!-- GAMEPLAY -->
-<div id="game-table">
-    <div id="hud-top">
-        <span>🀄 <span id="wall-count">0</span></span>
-        <span>💰 <span id="game-coins">0</span></span>
-        <button onclick="showMenu()" style="background:none; border:1px solid #666; color:#aaa; cursor:pointer">MENU</button>
-    </div>
-
-    <div id="big-msg">WIN!</div>
-    <div id="discard-pile"></div>
-
-    <div id="actions">
-        <button id="btn-hu" class="action-btn btn-hu" onclick="doAction('hu')">HU! (WIN)</button>
-        <button id="btn-kong" class="action-btn btn-kong" onclick="doAction('kong')">KONG</button>
-        <button id="btn-pung" class="action-btn btn-pung" onclick="doAction('pung')">PUNG</button>
-        <button id="btn-chow" class="action-btn btn-chow" onclick="doAction('chow')">CHOW</button>
-        <button class="action-btn btn-skip" onclick="doAction('skip')">PASS</button>
-    </div>
-
-    <!-- PLAYERS -->
-    <div id="p0-area" class="hand-container">
-        <div id="p0-exposed" class="exposed-tiles"></div>
-        <div id="p0-hand" class="hand-tiles"></div>
-    </div>
-    <div id="p1-area" class="hand-container">
-        <div id="p1-exposed" class="exposed-tiles"></div>
-        <div id="p1-hand" class="hand-tiles"></div>
-    </div>
-    <div id="p2-area" class="hand-container">
-        <div id="p2-exposed" class="exposed-tiles"></div>
-        <div id="p2-hand" class="hand-tiles"></div>
-    </div>
-    <div id="p3-area" class="hand-container">
-        <div id="p3-exposed" class="exposed-tiles"></div>
-        <div id="p3-hand" class="hand-tiles"></div>
-    </div>
+    <h1>MAHJONG v8</h1>
+    <button class="menu-btn" onclick="startGame()">START GAME</button>
+    <button class="menu-btn" onclick="toggleSkin()">CHANGE SKIN</button>
+    <button class="menu-btn" onclick="document.documentElement.requestFullscreen()">FULLSCREEN</button>
+    <p style="color:#666; margin-top:20px">v8.0 | Audio | No Blockage</p>
 </div>
 
 <script>
-    /* --- AUDIO ENGINE (Web Audio API) --- */
-    const Audio = {
+    /* --- 1. AUDIO ENGINE (Safe Mode) --- */
+    const AudioEngine = {
         ctx: null,
         init: function() {
-            window.AudioContext = window.AudioContext || window.webkitAudioContext;
-            this.ctx = new AudioContext();
+            // Only init on user gesture
+            if (!this.ctx) {
+                const Ctx = window.AudioContext || window.webkitAudioContext;
+                if (Ctx) this.ctx = new Ctx();
+            }
+            if (this.ctx && this.ctx.state === 'suspended') this.ctx.resume();
         },
-        playTone: function(freq, type, duration) {
-            if(!this.ctx) return;
-            const osc = this.ctx.createOscillator();
-            const gain = this.ctx.createGain();
-            osc.type = type;
-            osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
-            gain.gain.setValueAtTime(0.1, this.ctx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
-            osc.connect(gain);
-            gain.connect(this.ctx.destination);
-            osc.start();
-            osc.stop(this.ctx.currentTime + duration);
+        beep: function(freq, type, dur) {
+            if (!this.ctx) return;
+            try {
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = type;
+                osc.frequency.value = freq;
+                gain.gain.setValueAtTime(0.1, this.ctx.currentTime);
+                gain.gain.linearRampToValueAtTime(0, this.ctx.currentTime + dur);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + dur);
+            } catch(e) {}
         },
-        click: () => Audio.playTone(800, 'sine', 0.1),
-        thock: () => Audio.playTone(150, 'triangle', 0.15),
-        alert: () => Audio.playTone(600, 'square', 0.3),
+        click: () => AudioEngine.beep(600, 'sine', 0.1),
+        thock: () => AudioEngine.beep(150, 'triangle', 0.1),
+        alert: () => AudioEngine.beep(400, 'square', 0.3),
         win: () => {
-            [300, 400, 500, 600, 800].forEach((f, i) => 
-                setTimeout(() => Audio.playTone(f, 'sine', 0.5), i*100)
-            );
+            [400,500,600,800].forEach((f,i) => setTimeout(() => AudioEngine.beep(f,'sine',0.4), i*150));
         }
     };
 
-    /* --- DATA --- */
-    const SKINS = {
-        'classic': { name: 'Classic Green', cost: 0, class: '' },
-        'neon': { name: 'Neon City', cost: 200, class: 'skin-neon' },
-        'wood': { name: 'Vintage Wood', cost: 500, class: 'skin-wood' }
-    };
-
-    let data = JSON.parse(localStorage.getItem('mahjongv7')) || { coins: 100, unlocked: ['classic'], skin: 'classic' };
-    
+    /* --- 2. GAME STATE --- */
     const TILES = {
         'east': 0x1F000, 'south': 0x1F001, 'west': 0x1F002, 'north': 0x1F003,
         'red': 0x1F004, 'green': 0x1F005, 'white': 0x1F006,
         'chars': 0x1F007, 'bamboo': 0x1F010, 'dots': 0x1F019
     };
-
+    
     let deck=[], players=[], exposed=[], discardPile=[];
     let turn=0, lastDiscard=null, paused=false;
+    let coins = 100;
+    let currentSkin = 0;
+    const skins = ['', 'skin-neon', 'skin-gold'];
 
-    /* --- INIT --- */
+    /* --- 3. STARTUP --- */
     function startGame() {
-        Audio.init();
-        document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
+        AudioEngine.init(); // Wakes up audio
+        document.getElementById('main-menu').classList.add('hidden');
         document.getElementById('game-table').style.display = 'block';
-        document.body.className = SKINS[data.skin].class;
-        initRound();
+        resetRound();
     }
 
-    function initRound() {
+    function toggleSkin() {
+        currentSkin = (currentSkin + 1) % skins.length;
+        document.body.className = skins[currentSkin];
+        AudioEngine.click();
+    }
+
+    function showMenu() {
+        document.getElementById('main-menu').classList.remove('hidden');
+        document.getElementById('game-table').style.display = 'none';
+    }
+
+    function resetRound() {
         deck = [];
-        ['chars','bamboo','dots'].forEach(t => { for(let i=1; i<=9; i++) for(let k=0; k<4; k++) deck.push({type:t, val:i}); });
-        ['east','south','west','north','red','green','white'].forEach(v => { for(let k=0; k<4; k++) deck.push({type:'honor', val:v}); });
+        ['chars','bamboo','dots'].forEach(t => { for(let i=1;i<=9;i++) for(let k=0;k<4;k++) deck.push({type:t, val:i}); });
+        ['east','south','west','north','red','green','white'].forEach(v => { for(let k=0;k<4;k++) deck.push({type:'honor', val:v}); });
         deck.sort(() => Math.random()-0.5);
 
         players=[[],[],[],[]]; exposed=[[],[],[],[]]; discardPile=[];
         turn=0; paused=false; lastDiscard=null;
 
         // Deal 13 tiles
-        for(let i=0; i<13; i++) for(let p=0; p<4; p++) players[p].push(deck.pop());
+        for(let i=0;i<13;i++) for(let p=0;p<4;p++) players[p].push(deck.pop());
         
-        players[0].sort(sortTiles);
-        updateUI();
+        players[0].sort(tileSort);
+        render();
         
-        // Start with Player 0 Draw
-        setTimeout(() => drawTile(0), 500);
+        // Start Game: Player 0 Draws
+        setTimeout(() => drawTile(0), 800);
     }
 
-    /* --- LOOP --- */
+    /* --- 4. LOOP --- */
     function drawTile(pid) {
-        if(deck.length===0) return endGame(-1);
+        if(deck.length===0) return alert("Draw!");
+        const tile = deck.pop();
+        players[pid].push(tile);
+        AudioEngine.thock();
         
-        const t = deck.pop();
-        players[pid].push(t);
-        Audio.thock();
-        updateUI(pid === 0); // Pass true to indicate "fresh draw" for player 0
+        render(pid === 0); // Special render for Human draw
 
-        if(pid === 0) {
-            checkWin(0, t);
+        if(pid===0) {
+            // Human Turn
+            if(checkWin(players[0])) {
+                document.getElementById('actions').style.display='flex';
+                AudioEngine.alert();
+            }
         } else {
-            // Bot Delay: 2000ms - 4000ms
-            const delay = 2000 + Math.random() * 2000;
-            updateStatus(`Bot ${pid} thinking...`);
-            setTimeout(() => botTurn(pid), delay);
+            // Bot Turn (Delayed)
+            const thinkTime = 2500 + Math.random()*2000; // 2.5s - 4.5s
+            setTimeout(() => botLogic(pid), thinkTime);
         }
     }
 
-    function botTurn(pid) {
-        // Bot Win Logic
-        if(checkWinLogic(players[pid])) {
-            doBotAction(pid, 'HU!', null);
+    function botLogic(pid) {
+        // Bot Win?
+        if(checkWin(players[pid])) {
+            finishGame(pid);
             return;
         }
-        // Discard
+        // Discard Random
         const idx = Math.floor(Math.random() * players[pid].length);
         discard(pid, idx);
     }
 
     function discard(pid, idx) {
-        const t = players[pid].splice(idx, 1)[0];
-        lastDiscard = { tile: t, from: pid };
-        discardPile.push(t);
-        Audio.thock();
+        const tile = players[pid].splice(idx, 1)[0];
+        lastDiscard = { tile, from: pid };
+        discardPile.push(tile);
+        AudioEngine.click();
         
-        // Sort hand if it was player 0 (to merge the fresh tile back in)
-        if(pid===0) players[0].sort(sortTiles);
-        
-        updateUI();
-        checkInterrupts(t, pid);
+        if(pid===0) players[0].sort(tileSort); // Re-sort human hand
+        render();
+
+        checkInterrupts(tile, pid);
     }
 
     function checkInterrupts(tile, from) {
-        // Human Priority
+        // Human Interrupts
         if(from !== 0) {
             const h = players[0];
-            const canHu = checkWinLogic([...h, tile]);
+            const canHu = checkWin([...h, tile]);
             const canKong = h.filter(x=>isSame(x,tile)).length >= 3;
             const canPung = h.filter(x=>isSame(x,tile)).length >= 2;
-            const canChow = (from===3) && checkChowLogic(h, tile);
+            // Chow only from Left (Player 3)
+            const canChow = (from===3) && checkChow(h, tile);
 
             if(canHu || canKong || canPung || canChow) {
                 paused = true;
-                Audio.alert();
+                AudioEngine.alert();
                 showActions(canHu, canKong, canPung, canChow);
                 return;
             }
         }
 
-        // Bot Interrupts
-        let actor=-1, action='';
+        // Bot Interrupts (10% chance)
+        let actor = -1;
         for(let i=1; i<4; i++) {
-            if(i===from) continue;
-            if(checkWinLogic([...players[i], tile])) { actor=i; action='HU!'; break; }
-            // 15% chance to Pung if possible
-            if(Math.random()<0.15 && players[i].filter(x=>isSame(x,tile)).length>=2) { actor=i; action='PUNG!'; break; }
+            if(i!==from && Math.random() < 0.1 && players[i].filter(x=>isSame(x,tile)).length >= 2) {
+                actor = i;
+            }
         }
 
-        if(actor > -1) {
+        if(actor !== -1) {
             paused = true;
-            announce(actor, action);
-            setTimeout(() => doBotAction(actor, action, tile), 2000);
+            announce(actor, "PUNG!");
+            setTimeout(() => {
+                removeFromHand(actor, tile, 2);
+                exposed[actor].push([tile, tile, tile]);
+                discardPile.pop();
+                render();
+                setTimeout(() => discard(actor, 0), 1500);
+            }, 2000);
         } else {
-            advanceTurn(from);
+            // Next turn
+            turn = (from+1)%4;
+            setTimeout(() => drawTile(turn), 500);
         }
     }
 
-    function advanceTurn(curr) {
-        turn = (curr+1)%4;
-        drawTile(turn);
-    }
-
-    /* --- ACTIONS --- */
-    window.doAction = function(type) {
+    /* --- 5. ACTIONS --- */
+    window.playerAction = function(type) {
         document.getElementById('actions').style.display='none';
-        Audio.click();
+        paused = false;
         
         if(type==='skip') {
-            paused=false; 
-            advanceTurn(lastDiscard.from);
+            let next = (lastDiscard.from + 1) % 4;
+            drawTile(next);
             return;
         }
 
         const t = lastDiscard.tile;
-        if(type==='hu') return endGame(0);
-        
-        discardPile.pop(); // Take tile
-        
+        if(type==='hu') return finishGame(0);
+
+        discardPile.pop();
         if(type==='pung') {
             removeFromHand(0, t, 2);
             exposed[0].push([t,t,t]);
         } else if(type==='kong') {
             removeFromHand(0, t, 3);
             exposed[0].push([t,t,t,t]);
-            drawTile(0); return; // Draw replacement
+            drawTile(0); return;
         } else if(type==='chow') {
-            // Find sequence
-            const h=players[0];
-            const t1 = h.find(x=>x.type===t.type && x.val===t.val-1);
-            const t2 = h.find(x=>x.type===t.type && x.val===t.val+1);
+            // Simple chow (take first match)
+            let h = players[0];
+            let t1 = h.find(x=>x.type===t.type && x.val===t.val-1);
+            let t2 = h.find(x=>x.type===t.type && x.val===t.val+1);
             removeSpecific(0, t1); removeSpecific(0, t2);
-            exposed[0].push([t1, t, t2].sort(sortTiles));
+            exposed[0].push([t1, t, t2].sort(tileSort));
         }
-        
-        updateUI();
-        paused=false; 
-        turn=0; // User must discard now
+        render();
+        turn = 0; // Your turn to discard
     };
 
-    function doBotAction(pid, type, tile) {
-        if(type==='HU!') return endGame(pid);
-        
-        discardPile.pop();
-        removeFromHand(pid, tile, 2);
-        exposed[pid].push([tile, tile, tile]);
-        updateUI();
-        
-        setTimeout(() => discard(pid, 0), 1500);
-        paused=false;
-    }
-
-    /* --- LOGIC --- */
-    function checkWinLogic(hand) {
-        let map={}; hand.forEach(x=>map[x.type+x.val]=(map[x.type+x.val]||0)+1);
-        let pairs=0; for(let k in map) if(map[k]===2) pairs++;
-        // Simplified: If we have a pair and rest are sets
-        return pairs===1 && (hand.length%3===2);
-    }
-    function checkChowLogic(hand, t) {
-        if(t.type==='honor') return false;
-        const has = v => hand.some(x=>x.type===t.type && x.val===v);
-        return has(t.val-1) && has(t.val+1);
-    }
-    function checkWin(pid, tile) {
-        if(checkWinLogic(players[pid])) {
-             paused=true;
-             Audio.alert();
-             document.getElementById('actions').style.display='flex';
-             document.getElementById('btn-hu').style.display='block';
-        }
-    }
-
-    /* --- UI --- */
-    function updateUI(isFreshDraw) {
+    /* --- 6. RENDERING --- */
+    function render(freshDraw = false) {
         document.getElementById('wall-count').innerText = deck.length;
-        document.getElementById('game-coins').innerText = data.coins;
+        document.getElementById('coins-display').innerText = coins;
         
-        // Render Discard
+        // Discards
         const dEl = document.getElementById('discard-pile');
         dEl.innerHTML = '';
-        discardPile.forEach(t => dEl.appendChild(renderTile(t)));
+        discardPile.forEach(t => dEl.appendChild(makeTile(t)));
 
-        // Render Players
+        // Players
         [0,1,2,3].forEach(pid => {
-            const handDiv = document.getElementById(`p${pid}-hand`);
-            const expDiv = document.getElementById(`p${pid}-exposed`);
-            handDiv.innerHTML=''; expDiv.innerHTML='';
+            const hDiv = document.getElementById(`p${pid}-hand`);
+            const eDiv = document.getElementById(`p${pid}-exposed`);
+            hDiv.innerHTML = ''; eDiv.innerHTML = '';
 
+            // Exposed
             exposed[pid].forEach(g => {
-                let m = document.createElement('div'); m.className='meld';
-                g.forEach(t => { let el=renderTile(t); el.style.opacity='0.8'; m.appendChild(el); });
-                expDiv.appendChild(m);
+                const m = document.createElement('div'); m.className='meld';
+                g.forEach(t => m.appendChild(makeTile(t)));
+                eDiv.appendChild(m);
             });
 
+            // Hand
             players[pid].forEach((t, i) => {
                 if(pid===0) {
-                    let el = renderTile(t);
-                    // THE VISUAL DRAW: If this is the last tile and we have 14 (14%3=2), separate it
-                    if(isFreshDraw && i === players[pid].length-1) {
+                    const el = makeTile(t);
+                    // SEPARATED DRAW: Last tile gets 'fresh-tile' class if it's the 14th (modulo 3 == 2)
+                    if(freshDraw && i === players[0].length - 1) {
                         el.classList.add('fresh-tile');
                     }
-                    el.onclick = () => { if(!paused && turn===0) discard(0, i); };
-                    handDiv.appendChild(el);
+                    el.onclick = () => { 
+                        if(!paused && turn===0) discard(0, i); 
+                    };
+                    hDiv.appendChild(el);
                 } else {
-                    let el = document.createElement('div');
-                    el.className='tile tile-back';
-                    handDiv.appendChild(el);
+                    const el = document.createElement('div');
+                    el.className = 'tile tile-back';
+                    hDiv.appendChild(el);
                 }
             });
         });
     }
 
-    function renderTile(t) {
-        let d = document.createElement('div');
-        d.className = `tile ${t.type}`; 
+    function makeTile(t) {
+        const el = document.createElement('div');
+        el.className = `tile ${t.type}`;
         let char = String.fromCodePoint(t.type==='honor' ? TILES[t.val] : TILES[t.type]+(t.val-1));
-        d.innerText = char;
-        return d;
+        el.innerText = char;
+        return el;
     }
-    
+
     function showActions(h,k,p,c) {
-        let b = document.getElementById('actions');
+        const b = document.getElementById('actions');
         b.style.display='flex';
-        document.getElementById('btn-hu').style.display=h?'block':'none';
-        document.getElementById('btn-kong').style.display=k?'block':'none';
-        document.getElementById('btn-pung').style.display=p?'block':'none';
-        document.getElementById('btn-chow').style.display=c?'block':'none';
+        // Simple toggle based on flags
+        b.children[0].style.display = h?'block':'none';
+        b.children[1].style.display = k?'block':'none';
+        b.children[2].style.display = p?'block':'none';
+        b.children[3].style.display = c?'block':'none';
     }
 
     function announce(pid, txt) {
-        let el = document.getElementById('big-msg');
-        el.innerText = pid===0 ? txt : `BOT ${pid} ${txt}`;
+        const el = document.getElementById('big-msg');
+        el.innerText = `BOT ${pid} ${txt}`;
         el.classList.add('show');
         setTimeout(() => el.classList.remove('show'), 1500);
     }
 
-    function endGame(winner) {
-        Audio.win();
-        announce(winner, winner===0?"YOU WIN!":"WINS!");
-        if(winner===0) {
-            data.coins += 50;
-            localStorage.setItem('mahjongv7', JSON.stringify(data));
-        }
+    function finishGame(winner) {
+        AudioEngine.win();
+        const el = document.getElementById('big-msg');
+        el.innerText = winner===0 ? "YOU WIN!" : "GAME OVER";
+        el.classList.add('show');
+        if(winner===0) coins += 50;
         setTimeout(showMenu, 4000);
     }
 
-    function updateStatus(msg) { /* Optional HUD updates */ }
-    
-    /* --- SHOP & MENU --- */
-    function showMenu() {
-        document.querySelectorAll('.screen').forEach(s=>s.classList.add('hidden'));
-        document.getElementById('main-menu').classList.remove('hidden');
-        document.getElementById('game-table').style.display='none';
-        document.getElementById('coins-display').innerText=`Coins: ${data.coins}`;
-    }
-    function openStore() {
-        document.getElementById('main-menu').classList.add('hidden');
-        document.getElementById('store-screen').classList.remove('hidden');
-        let grid = document.getElementById('store-grid');
-        grid.innerHTML='';
-        for(let k in SKINS) {
-            let s = SKINS[k];
-            let btn = document.createElement('div');
-            let owned = data.unlocked.includes(k);
-            btn.style.cssText = "border:1px solid #555; padding:20px; text-align:center; cursor:pointer; background:" + (data.skin===k?'#442':'#222');
-            btn.innerHTML = `<h3>${s.name}</h3><p>${owned ? (data.skin===k?'EQUIPPED':'OWNED') : s.cost+' Coins'}</p>`;
-            btn.onclick = () => {
-                if(owned) { data.skin=k; save(); openStore(); }
-                else if(data.coins >= s.cost) { data.coins-=s.cost; data.unlocked.push(k); data.skin=k; save(); openStore(); }
-            };
-            grid.appendChild(btn);
-        }
-    }
-    function openTutorial() { 
-        document.getElementById('main-menu').classList.add('hidden');
-        document.getElementById('tutorial-screen').classList.remove('hidden');
-    }
-    function save() { localStorage.setItem('mahjongv7', JSON.stringify(data)); }
-
-    /* --- UTILS --- */
-    function sortTiles(a,b) {
-        const s = {'chars':100, 'dots':200, 'bamboo':300, 'honor':400};
-        const va = typeof a.val==='string' ? 10 : a.val;
-        const vb = typeof b.val==='string' ? 10 : b.val;
+    /* --- 7. HELPERS --- */
+    function isSame(a,b) { return a.type===b.type && a.val===b.val; }
+    function tileSort(a,b) {
+        const s = {'chars':100,'dots':200,'bamboo':300,'honor':400};
+        const va = typeof a.val==='string'?10:a.val; 
+        const vb = typeof b.val==='string'?10:b.val;
         return (s[a.type]+va) - (s[b.type]+vb);
     }
-    function isSame(a,b) { return a.type===b.type && a.val===b.val; }
+    function checkWin(h) {
+        // Heuristic: 1 pair + (N sets)
+        // This is simplified. Real mahjong is recursive.
+        let map={}; h.forEach(x=>map[x.type+x.val]=(map[x.type+x.val]||0)+1);
+        let pairs=0; for(let k in map) if(map[k]===2) pairs++;
+        return pairs===1 && h.length%3===2;
+    }
+    function checkChow(h, t) {
+        if(t.type==='honor') return false;
+        const has = v => h.some(x=>x.type===t.type && x.val===v);
+        return has(t.val-1) && has(t.val+1);
+    }
     function removeFromHand(pid, t, n) {
         let c=0; players[pid] = players[pid].filter(x=>{ if(c<n && isSame(x,t)) { c++; return false; } return true; });
     }
@@ -593,8 +506,6 @@
         let i = players[pid].findIndex(x=>isSame(x,t));
         if(i>-1) players[pid].splice(i,1);
     }
-
-    showMenu();
 </script>
 </body>
 </html>
