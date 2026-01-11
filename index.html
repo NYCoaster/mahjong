@@ -125,17 +125,17 @@
         .page.active { display: flex; }
         #game-page { padding: 0; background: #111; }
 
-        .corner-num { position: absolute; top: 2px; left: 3px; font-size: 10px; font-weight: bold; opacity: 0.6; color:black }
+        .corner-num { position: absolute; top: 2px; left: 3px; font-size: 10px; font-weight: bold; opacity: 0.8; color: var(--text); z-index:2; }
     </style>
 </head>
 <body>
 
 <div id="sidebar">
     <h2 style="color:var(--accent); margin:0 0 10px 0">🀄 Mahjong</h2>
-    <div class="nav-item active" onclick="nav('game')">▶ Play Game</div>
-    <div class="nav-item" onclick="nav('shop')">🛒 Skin Shop</div>
-    <div class="nav-item" onclick="nav('tutorial')">📖 How to Play</div>
-    <div class="nav-item" onclick="nav('settings')">⚙ Settings</div>
+    <div class="nav-item active" onclick="nav('game', event)">▶ Play Game</div>
+    <div class="nav-item" onclick="nav('shop', event)">🛒 Skin Shop</div>
+    <div class="nav-item" onclick="nav('tutorial', event)">📖 How to Play</div>
+    <div class="nav-item" onclick="nav('settings', event)">⚙ Settings</div>
     <div style="flex:1"></div>
     <div style="background:rgba(0,0,0,0.05); padding:15px; border-radius:8px">
         <div style="font-size:11px; opacity:0.6">COINS</div>
@@ -202,10 +202,14 @@
                 else if(v==4) g=SVG.circle(30,30,15,B)+SVG.circle(70,30,15,G)+SVG.circle(30,100,15,G)+SVG.circle(70,100,15,B);
                 else if(v==5) g=SVG.circle(25,25,12,B)+SVG.circle(75,25,12,G)+SVG.circle(50,65,12,R)+SVG.circle(25,105,12,G)+SVG.circle(75,105,12,B);
                 else g=`<text x="50" y="85" font-size="60" text-anchor="middle" fill="${B}" font-weight="bold">${v}</text>`;
+                // Add numeric corner label for suits
+                num = `<span class="corner-num">${v}</span>`;
             } 
             else if(t==='bamboo') {
                 if(v==1) g=`<path d="M50,45 Q30,65 20,55 Q40,35 50,25 Q60,35 80,55 Q70,65 50,45 M50,65 L50,115 M30,115 L70,115" stroke="${G}" stroke-width="5" fill="none"/>`;
                 else g=`<rect x="35" y="25" width="10" height="80" fill="${G}"/><rect x="55" y="25" width="10" height="80" fill="${G}"/>`;
+                // Add numeric corner label for suits
+                num = `<span class="corner-num">${v}</span>`;
             }
             else if(t==='chars') {
                 const ch=['一','二','三','四','五','六','七','八','九'];
@@ -217,7 +221,7 @@
                 const col=(v=='red'||v=='white')?R:(v=='green'?G:'#000');
                 g=`<text x="50" y="95" font-size="70" text-anchor="middle" fill="${col}">${h[v]}</text>`;
                 if(v=='white') g+=`<rect x="10" y="10" width="80" height="110" stroke="${B}" stroke-width="5" fill="none"/>`;
-                num=`<span class="corner-num">${v[0].toUpperCase()}</span>`;
+                num=`<span class="corner-num">${String(v)[0].toUpperCase()}</span>`;
             }
             return num + SVG.base(g);
         }
@@ -240,6 +244,8 @@
 
     /* --- GAME ENGINE --- */
     let deck=[], players=[], discards=[], turn=0, lastT=null, paused=false, sortMode='suit';
+    // Exposed melds (to store pungs/kongs/etc)
+    let exposed = [[],[],[],[]];
 
     function initGame() {
         deck=[];
@@ -247,6 +253,7 @@
         ['east','south','west','north','red','green','white'].forEach(v=>{for(let k=0;k<4;k++)deck.push({t:'honor',v})});
         deck.sort(()=>Math.random()-0.5);
         players=[[],[],[],[]]; discards=[];
+        exposed = [[],[],[],[]];
         for(let i=0;i<16;i++) for(let p=0;p<4;p++) players[p].push(deck.pop());
         players[0].sort(sortT);
         render(); setTimeout(()=>draw(0), 800);
@@ -323,13 +330,14 @@
         if(type==='hu') return end("VICTORY");
         if(type==='skip') { 
             // If self-turn, we just continue (user must discard). If interrupt, we draw.
-            if(lastT.from === 0) { /* Do nothing, wait for discard */ } 
-            else { draw((lastT.from+1)%4); }
+            if(lastT && lastT.from === 0) { /* Do nothing, wait for discard */ } 
+            else if(lastT) { draw((lastT.from+1)%4); }
             return;
         }
         
-        const isSelf = (lastT.from === 0);
-        const t = lastT.t;
+        const isSelf = (lastT && lastT.from === 0);
+        const t = lastT ? lastT.t : null;
+        if(!t) return;
 
         // 1. Remove from table if interrupt
         if (!isSelf) discards.pop(); 
@@ -359,10 +367,9 @@
             return;
         } 
         else {
-            // Pung: Add 3, Discard phase
+            // Pung/Chow: simplified handling, player will then discard
         }
 
-        // players[0].push(t); // Only if not self-kong? logic simplified
         players[0].sort(sortT);
         render();
     }
@@ -393,11 +400,11 @@
         if(txt==='VICTORY'){ App.data.coins+=100; App.save(); }
     }
 
-    function nav(page) {
+    function nav(page, ev) {
         document.querySelectorAll('.page').forEach(e=>e.classList.remove('active'));
         document.querySelectorAll('.nav-item').forEach(e=>e.classList.remove('active'));
         document.getElementById('page-'+page).classList.add('active');
-        event.target.classList.add('active');
+        if(ev && ev.target) ev.target.classList.add('active');
         if(page==='shop') renderShop();
     }
 
@@ -406,8 +413,8 @@
         for(let k in SKINS) {
             let s=SKINS[k]; let owned=App.data.unlocked.includes(k); let act=App.data.skin===k;
             let el=document.createElement('div');
-            el.style.cssText = `background:var(--surface); padding:20px; border-radius:8px; border:1px solid var(--border); text-align:center; cursor:pointer; ${act?'border-color:var(--accent); background:rgba(0,120,212,0.05)':''}`;
-            el.innerHTML=`<h3>${s.name}</h3><p>${owned?(act?'ACTIVE':'OWNED'):s.cost+' Coins'}</p>`;
+            el.style.cssText = `background:var(--surface); padding:20px; border-radius:8px; border:1px solid var(--border); text-align:center; cursor:pointer; ${act?'border-color:var(--accent); background:rgba(0,0,0,0.03);':''}`;
+            el.innerHTML=`<h3 style="margin:6px 0">${s.name}</h3><p style="margin:6px 0">${owned?(act?'ACTIVE':'OWNED'):s.cost+' Coins'}</p>`;
             el.onclick=()=>{ 
                 if(owned) App.data.skin=k; 
                 else if(App.data.coins>=s.cost) { App.data.coins-=s.cost; App.data.unlocked.push(k); App.data.skin=k; }
