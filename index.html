@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Mahjong</title>
+    <style>
+        body {
+            margin: 0;
+            background-color: #2d5e3e; /* Green Felt */
+            color: white;
+            font-family: sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        #game-table {
+            position: relative;
+            width: 800px;
+            height: 800px;
+            border: 10px solid #4a2c18;
+            border-radius: 20px;
+            margin-top: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* Status Bar */
+        #status-bar {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            z-index: 10;
+            background: rgba(0,0,0,0.5);
+            padding: 10px 20px;
+            border-radius: 8px;
+        }
+
+        /* Tile Styling */
+        .tile {
+            width: 40px;
+            height: 55px;
+            background: white;
+            color: black;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 32px;
+            cursor: pointer;
+            box-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            user-select: none;
+        }
+        
+        .tile-back {
+            background: #1d6f42;
+            color: rgba(255,255,255,0.8);
+            font-size: 28px;
+        }
+
+        /* Hand Containers */
+        .hand {
+            position: absolute;
+            display: flex;
+            gap: 2px;
+        }
+
+        #hand-top { top: 20px; flex-direction: row; }
+        #hand-bottom { bottom: 20px; flex-direction: row; }
+        #hand-left { left: 20px; top: 100px; bottom: 100px; flex-direction: column; justify-content: center; }
+        #hand-right { right: 20px; top: 100px; bottom: 100px; flex-direction: column; justify-content: center; }
+
+        /* Player Interaction */
+        #hand-player { bottom: 40px; }
+        #hand-player .tile:hover {
+            transform: translateY(-10px);
+            border-color: gold;
+        }
+
+        /* Discard Pile */
+        #discard-pile {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 2px;
+            width: 400px;
+            height: 300px;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+
+<div id="game-table">
+    <!-- Other Players (Bots) -->
+    <div id="hand-top" class="hand"></div>
+    <div id="hand-left" class="hand"></div>
+    <div id="hand-right" class="hand"></div>
+
+    <!-- Center Area -->
+    <div id="status-bar">
+        <h2 id="status-text">Initializing...</h2>
+        <div id="discard-pile"></div>
+    </div>
+
+    <!-- Human Player -->
+    <div id="hand-player" class="hand"></div>
+</div>
+
+<script>
+    // --- YOUR LOGIC BELOW ---
+    const suits = ['bamboo', 'dots', 'chars'];
+    const honors = ['east', 'south', 'west', 'north', 'red', 'green', 'white'];
+    let deck = [];
+    let players = [[], [], [], []];
+    let turn = 0;
+
+    const TILE_MAP = {
+        'east': 0x1F000, 'south': 0x1F001, 'west': 0x1F002, 'north': 0x1F003,
+        'red': 0x1F004, 'green': 0x1F005, 'white': 0x1F006,
+        'chars': 0x1F007, 
+        'bamboo': 0x1F010,
+        'dots': 0x1F019
+    };
+
+    function initDeck() {
+        deck = [];
+        suits.forEach(suit => {
+            for (let i = 1; i <= 9; i++) {
+                for (let k = 0; k < 4; k++) deck.push({ type: suit, val: i });
+            }
+        });
+        honors.forEach(honor => {
+            for (let k = 0; k < 4; k++) deck.push({ type: 'honor', val: honor });
+        });
+        shuffle(deck);
+    }
+
+    function getTileChar(tile) {
+        if (tile.type === 'honor') {
+            return String.fromCodePoint(TILE_MAP[tile.val]);
+        }
+        const base = TILE_MAP[tile.type];
+        return String.fromCodePoint(base + (tile.val - 1));
+    }
+
+    function shuffle(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+    }
+
+    function getTileValue(tile) {
+        const typeScores = { 'chars': 100, 'dots': 200, 'bamboo': 300, 'honor': 400 };
+        let val = tile.val;
+        if (typeof val === 'string') val = honors.indexOf(val);
+        return (typeScores[tile.type] || 0) + val;
+    }
+
+    function drawTile(playerIndex) {
+        if (deck.length === 0) return updateStatus("Draw! Game Over.");
+        const tile = deck.pop();
+        players[playerIndex].push(tile);
+        
+        if (playerIndex === 0) {
+            updateStatus(`Your Turn`);
+        } else {
+            updateStatus(`Player ${playerIndex} thinking...`);
+            setTimeout(() => botPlay(playerIndex), 500);
+        }
+        renderHands();
+    }
+
+    function botPlay(playerIndex) {
+        const handSize = players[playerIndex].length;
+        const discardIndex = Math.floor(Math.random() * handSize);
+        discardTile(playerIndex, discardIndex);
+    }
+
+    function discardTile(playerIndex, tileIndex) {
+        const tile = players[playerIndex].splice(tileIndex, 1)[0];
+        addToDiscard(tile);
+        if (playerIndex === 0) players[0].sort((a,b) => getTileValue(a) - getTileValue(b));
+        renderHands();
+        
+        turn = (turn + 1) % 4;
+        drawTile(turn);
+    }
+
+    function addToDiscard(tile) {
+        const el = document.createElement('div');
+        el.className = `tile tile-face`;
+        el.textContent = getTileChar(tile);
+        document.getElementById('discard-pile').appendChild(el);
+    }
+
+    function renderHands() {
+        // Player (Bottom)
+        const pDiv = document.getElementById('hand-player');
+        pDiv.innerHTML = '';
+        players[0].forEach((tile, idx) => {
+            const el = document.createElement('div');
+            el.className = `tile tile-face`;
+            el.textContent = getTileChar(tile);
+            el.onclick = () => { if (turn === 0) discardTile(0, idx); };
+            pDiv.appendChild(el);
+        });
+
+        // Bots (Right, Top, Left)
+        const botPositions = ['right', 'top', 'left'];
+        botPositions.forEach((pos, i) => {
+            const botDiv = document.getElementById(`hand-${pos}`);
+            botDiv.innerHTML = '';
+            // Player 1 is right, 2 is top, 3 is left
+            players[i+1].forEach(() => {
+                const el = document.createElement('div');
+                el.className = 'tile tile-back';
+                el.textContent = String.fromCodePoint(0x1F02B); // Back face
+                botDiv.appendChild(el);
+            });
+        });
+    }
+
+    function updateStatus(msg) { document.getElementById('status-text').innerText = msg; }
+
+    function startGame() {
+        initDeck();
+        players = [[], [], [], []];
+        document.getElementById('discard-pile').innerHTML = '';
+        // Deal 16 tiles
+        for (let i = 0; i < 16; i++) {
+            for (let p = 0; p < 4; p++) players[p].push(deck.pop());
+        }
+        players[0].sort((a,b) => getTileValue(a) - getTileValue(b));
+        renderHands();
+        drawTile(0);
+    }
+
+    // Start immediately
+    startGame();
+</script>
+</body>
+</html>
