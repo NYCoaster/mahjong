@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mahjong v18: Fixed Sides</title>
+    <title>Mahjong v19</title>
     <style>
         :root {
             /* --- FLUENT VARS --- */
@@ -78,30 +78,30 @@
             border-radius: 3px;
         }
 
-        /* TILE SIZES */
-        .portrait { width: 42px; height: 56px; }   /* Top/Bottom */
-        .landscape { width: 56px; height: 42px; }  /* Left/Right */
+        /* SIZES */
+        .portrait { width: 42px; height: 56px; }   
+        .landscape { width: 56px; height: 42px; }  
 
         /* --- PLAYER ZONES (FIXED) --- */
         .zone { position: absolute; display: flex; gap: 2px; justify-content: center; align-items: center; }
 
-        /* P0 (Bottom) - Row */
+        /* P0 (Bottom) */
         #p0 { 
             bottom: 15px; left: 50%; transform: translateX(-50%);
             align-items: flex-end; width: 90%; height: 60px;
         }
         #p0 .tile:hover { transform: translateY(-15px); border-color: var(--accent); }
 
-        /* P2 (Top) - Row */
+        /* P2 (Top) */
         #p2 {
             top: 15px; left: 50%; transform: translateX(-50%);
-            width: 90%; height: 60px;
+            width: 90%; height: 60px; flex-direction: row-reverse;
         }
 
         /* P1 (Right) - Column */
         #p1 {
             right: 15px; top: 50%; transform: translateY(-50%);
-            flex-direction: column; height: 80%; width: 60px;
+            flex-direction: column-reverse; height: 80%; width: 60px;
         }
 
         /* P3 (Left) - Column */
@@ -135,20 +135,30 @@
         .act-btn:hover { background: var(--accent); color: white; transform: scale(1.05); }
         .btn-win { background: #d32f2f; color: white; border: none; }
 
+        /* SORT BUTTON */
+        #btn-sort {
+            position: absolute; bottom: 20px; right: 20px; z-index: 200;
+            width: 50px; height: 50px; border-radius: 50%;
+            background: var(--accent); color: white; border: none;
+            font-size: 24px; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            display: flex; align-items: center; justify-content: center;
+        }
+        #btn-sort:hover { transform: scale(1.1); }
+
         /* --- PAGES --- */
-        .page { position: absolute; inset: 0; background: var(--mica); display: none; flex-direction: column; padding: 40px; }
+        .page { position: absolute; inset: 0; background: var(--mica); display: none; flex-direction: column; padding: 40px; overflow-y: auto; }
         .page.active { display: flex; }
         #game-page { padding: 0; background: #111; }
 
-        /* NOTIFICATION */
-        #msg {
-            position: absolute; inset: 0; background: rgba(0,0,0,0.9); z-index: 500;
-            display: none; flex-direction: column; align-items: center; justify-content: center;
-        }
-        h1.win { font-size: 5em; color: #ffd700; text-shadow: 0 0 30px orange; margin: 0; }
-
         /* HELPERS */
         .corner-num { position: absolute; top: 2px; left: 3px; font-size: 10px; font-weight: bold; opacity: 0.6; color:black }
+
+        /* TUTORIAL */
+        .tutorial-card {
+            background: var(--surface); padding: 20px; border-radius: 8px;
+            margin-bottom: 20px; border: 1px solid var(--border);
+        }
+        h2 { margin-top: 0; }
     </style>
 </head>
 <body>
@@ -157,6 +167,7 @@
     <h2 style="color:var(--accent); margin:0 0 10px 0">🀄 Mahjong</h2>
     <div class="nav-item active" onclick="nav('game')">▶ Play Game</div>
     <div class="nav-item" onclick="nav('shop')">🛒 Skin Shop</div>
+    <div class="nav-item" onclick="nav('tutorial')">📖 How to Play</div>
     <div class="nav-item" onclick="nav('settings')">⚙ Settings</div>
     <div style="flex:1"></div>
     <div style="background:rgba(0,0,0,0.05); padding:15px; border-radius:8px">
@@ -177,6 +188,9 @@
             <div id="p2" class="zone"></div>
             <div id="p3" class="zone"></div>
 
+            <!-- SORT BTN -->
+            <button id="btn-sort" onclick="manualSort()" title="Sort Hand">🔃</button>
+
             <!-- ACTION BAR -->
             <div id="action-bar">
                 <button class="act-btn btn-win" onclick="act('hu')">WIN!</button>
@@ -188,9 +202,30 @@
         </div>
 
         <!-- NOTIFICATION -->
-        <div id="msg">
-            <h1 class="win" id="msg-txt">VICTORY</h1>
+        <div id="msg" style="display:none; position:absolute; inset:0; background:rgba(0,0,0,0.85); z-index:500; flex-direction:column; align-items:center; justify-content:center;">
+            <h1 style="color:gold; font-size:4em" id="msg-txt">VICTORY</h1>
             <button class="act-btn" style="margin-top:20px; font-size:18px; padding:12px 30px" onclick="location.reload()">Play Again</button>
+        </div>
+    </div>
+
+    <!-- TUTORIAL PAGE -->
+    <div id="page-tutorial" class="page">
+        <h1>How to Play</h1>
+        <div class="tutorial-card">
+            <h2>1. The Basics</h2>
+            <p>The goal is to assemble a valid hand of 4 sets and 1 pair. You draw a tile, then discard a tile to maintain 16 tiles.</p>
+        </div>
+        <div class="tutorial-card">
+            <h2>2. Forming Sets</h2>
+            <ul style="line-height:1.6">
+                <li><strong>PUNG (碰):</strong> Three identical tiles (e.g., 3-3-3).</li>
+                <li><strong>KONG (杠):</strong> Four identical tiles. Draws a replacement tile.</li>
+                <li><strong>CHOW (吃):</strong> A numerical sequence of 3 (e.g., 2-3-4). Can only be taken from the player to your left.</li>
+            </ul>
+        </div>
+        <div class="tutorial-card">
+            <h2>3. Winning (HU)</h2>
+            <p>When your hand is one tile away from completion (Tenpai), and you draw or someone discards that final tile, click <strong>WIN</strong> to claim victory!</p>
         </div>
     </div>
 
@@ -248,8 +283,8 @@
 
     /* --- APP DATA --- */
     const App = {
-        data: JSON.parse(localStorage.getItem('mahjongV18')) || { coins: 100, unlocked:['classic'], skin:'classic' },
-        save() { localStorage.setItem('mahjongV18', JSON.stringify(this.data)); this.update(); },
+        data: JSON.parse(localStorage.getItem('mahjongV19')) || { coins: 100, unlocked:['classic'], skin:'classic' },
+        save() { localStorage.setItem('mahjongV19', JSON.stringify(this.data)); this.update(); },
         update() { 
             document.getElementById('ui-coins').innerText = this.data.coins; 
             document.body.className = this.data.skin;
@@ -297,6 +332,11 @@
         }
         if(!paused) setTimeout(()=>draw((pid+1)%4), 500);
     }
+
+    window.manualSort = function() {
+        players[0].sort(sortT);
+        render();
+    };
 
     window.act = function(type) {
         document.getElementById('action-bar').style.display='none';
