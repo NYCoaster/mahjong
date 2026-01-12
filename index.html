@@ -1,191 +1,166 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
 <meta charset="UTF-8">
-<title>Taiwan Mahjong</title>
+<title>Taiwan Mahjong (Working)</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-
 <style>
-:root{
-    --felt:#1b5e20;
-    --wood:#4e342e;
-    --ivory:#fffdf6;
-    --ivory-shadow:#cfcab8;
-}
-
 body{
-    margin:0;
-    background:#111;
-    font-family:"Segoe UI",sans-serif;
-    height:100vh;
-    display:flex;
+  margin:0;
+  background:#111;
+  font-family:sans-serif;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  height:100vh;
 }
-
 #table{
-    flex:1;
-    background:var(--felt);
-    border:18px solid var(--wood);
-    border-radius:22px;
-    margin:20px;
-    position:relative;
+  width:90vmin;
+  height:90vmin;
+  background:#1b5e20;
+  border:18px solid #4e342e;
+  border-radius:20px;
+  position:relative;
+  padding:10px;
 }
-
-/* HUD */
 #hud{
-    position:absolute;
-    top:12px; left:14px;
-    background:rgba(0,0,0,.4);
-    padding:10px 14px;
-    border-radius:10px;
-    color:#fff;
-    font-size:14px;
+  position:absolute;
+  top:10px; left:10px;
+  background:rgba(0,0,0,.5);
+  color:#fff;
+  padding:8px 12px;
+  border-radius:8px;
+  font-size:14px;
 }
-#hud b{color:#ffd54f}
-
-.zone{
-    position:absolute;
-    display:flex;
-    gap:2px;
-    justify-content:center;
-    flex-wrap:wrap;
+#hand{
+  position:absolute;
+  bottom:10px;
+  left:50%;
+  transform:translateX(-50%);
+  display:flex;
 }
-
-#p0{bottom:15px;left:50%;transform:translateX(-50%);width:95%}
-#p2{top:15px;left:50%;transform:translateX(-50%);width:95%}
-#p1{right:15px;top:50%;transform:translateY(-50%);flex-direction:column}
-#p3{left:15px;top:50%;transform:translateY(-50%);flex-direction:column}
-
 .tile{
-    width:44px;
-    height:58px;
-    background:linear-gradient(145deg,var(--ivory),#f1ecd8);
-    border-radius:6px;
-    position:relative;
-    box-shadow:0 6px 10px rgba(0,0,0,.45);
-    cursor:pointer;
+  width:42px;
+  height:56px;
+  background:#fffdf6;
+  border-radius:6px;
+  margin:2px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:22px;
+  font-family:"KaiTi","STKaiti",serif;
+  box-shadow:0 5px 8px rgba(0,0,0,.5);
+  cursor:pointer;
 }
-.tile::after{
-    content:'';
-    position:absolute;
-    left:2px; right:2px;
-    bottom:-7px;
-    height:7px;
-    background:linear-gradient(to bottom,var(--ivory-shadow),#b6b19f);
-    border-radius:0 0 6px 6px;
+#controls{
+  position:absolute;
+  bottom:80px;
+  left:50%;
+  transform:translateX(-50%);
 }
-.tile-back{background:#0a4c8a}
-.tile svg{width:100%;height:100%}
-
-#center{
-    position:absolute;
-    inset:35% 30%;
-    display:grid;
-    grid-template-columns:repeat(6,1fr);
-    gap:2px;
+button{
+  padding:6px 14px;
+  font-size:14px;
+  border:none;
+  border-radius:6px;
+  cursor:pointer;
 }
 </style>
 </head>
 
 <body>
 <div id="table">
-    <div id="hud">
-        🪙 Coins: <b id="coins">0</b><br>
-        🧮 Tai (last win): <b id="tai">0</b>
-    </div>
+  <div id="hud">
+    🪙 Coins: <b id="coins">0</b><br>
+    🧮 Tai (last): <b id="tai">0</b>
+  </div>
 
-    <div id="center"></div>
-    <div id="p0" class="zone"></div>
-    <div id="p1" class="zone"></div>
-    <div id="p2" class="zone"></div>
-    <div id="p3" class="zone"></div>
+  <div id="controls">
+    <button onclick="win()">🀄 Declare Win</button>
+  </div>
+
+  <div id="hand"></div>
 </div>
 
 <script>
-/* ===============================
-   SIMPLE TAIWAN MAHJONG ENGINE
-   =============================== */
+/* =====================
+   TILE SET
+   ===================== */
+const tiles=[];
+['萬','索','筒'].forEach(s=>{
+  for(let n=1;n<=9;n++){
+    for(let i=0;i<4;i++) tiles.push(n+s);
+  }
+});
+['東','南','西','北','中','發','白'].forEach(h=>{
+  for(let i=0;i<4;i++) tiles.push(h);
+});
 
-let deck=[],players=[[],[],[],[]],discards=[];
-let coins=0,lastTai=0;
+/* =====================
+   GAME STATE
+   ===================== */
+let deck=[];
+let hand=[];
+let coins=0;
+let lastTai=0;
+
+const handEl=document.getElementById('hand');
 const coinsEl=document.getElementById('coins');
 const taiEl=document.getElementById('tai');
 
-function buildDeck(){
-deck=[];
-['dots','bamboo','chars'].forEach(t=>{
-for(let i=1;i<=9;i++)for(let k=0;k<4;k++)deck.push({t,v:i});
-});
-['east','south','west','north','red','green','white'].forEach(v=>{
-for(let k=0;k<4;k++)deck.push({t:'honor',v});
-});
-deck.sort(()=>Math.random()-0.5);
-}
-
+/* =====================
+   INIT
+   ===================== */
 function init(){
-buildDeck();
-players=[[],[],[],[]];
-discards=[];
-for(let i=0;i<16;i++)for(let p=0;p<4;p++)players[p].push(deck.pop());
-render();
-setTimeout(()=>draw(0),500);
+  deck=[...tiles].sort(()=>Math.random()-0.5);
+  hand=[];
+  for(let i=0;i<16;i++) draw();
+  render();
 }
 
-function draw(p){
-if(!deck.length)return;
-players[p].push(deck.pop());
-render();
-if(p!==0)setTimeout(()=>discard(p,Math.random()*players[p].length|0),700);
+function draw(){
+  if(deck.length) hand.push(deck.pop());
 }
 
-function discard(p,i){
-players[p].splice(i,1);
-render();
-setTimeout(()=>draw((p+1)%4),500);
-}
-
-/* ===============================
-   WIN + TAI CALCULATION
-   =============================== */
-
-function calculateTai(hand,isDealer=true){
-let tai=1; // base win
-if(isDealer) tai+=1;
-tai+=Math.floor(hand.length/3)-5; // crude pung count
-return Math.max(1,tai);
+/* =====================
+   TAI + WIN
+   ===================== */
+function calculateTai(){
+  // simple, predictable Taiwan-style base
+  let tai=1;              // base win
+  tai+=1;                 // dealer bonus (player is east)
+  return tai;
 }
 
 function win(){
-lastTai=calculateTai(players[0],true);
-coins+=10+lastTai;
-coinsEl.textContent=coins;
-taiEl.textContent=lastTai;
-alert(`🀄 WIN!\nTai: ${lastTai}\nCoins earned: ${10+lastTai}`);
-init();
+  lastTai=calculateTai();
+  coins+=10+lastTai;
+  coinsEl.textContent=coins;
+  taiEl.textContent=lastTai;
+  alert(`🀄 WIN!\nTai: ${lastTai}\nCoins gained: ${10+lastTai}`);
+  init();
 }
 
-/* ===============================
+/* =====================
    RENDER
-   =============================== */
-
+   ===================== */
 function render(){
-['p0','p1','p2','p3'].forEach((id,i)=>{
-let z=document.getElementById(id);
-z.innerHTML='';
-players[i].forEach((t,idx)=>{
-let d=document.createElement('div');
-d.className='tile'+(i?' tile-back':'');
-if(i===0){
-d.innerHTML=`<svg viewBox="0 0 100 140"><rect x="20" y="40" width="60" height="60" rx="8" fill="#eee"/></svg>`;
-d.onclick=()=>players[0].length%3===2&&discard(0,idx);
+  handEl.innerHTML='';
+  hand.forEach((t,i)=>{
+    const d=document.createElement('div');
+    d.className='tile';
+    d.textContent=t;
+    d.onclick=()=>{
+      if(hand.length===17){
+        hand.splice(i,1);
+        draw();
+        render();
+      }
+    };
+    handEl.appendChild(d);
+  });
 }
-z.appendChild(d);
-});
-});
-}
-
-document.addEventListener('keydown',e=>{
-if(e.key==='w') win();
-});
 
 init();
 </script>
