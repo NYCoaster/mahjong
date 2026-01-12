@@ -110,7 +110,6 @@ cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.3); z-index: 200; }
 <button class="btn btn-win" onclick="act('hu')">WIN!</button>
 <button class="btn" id="btn-kong" onclick="act('kong')">GAUNG</button>
 <button class="btn" id="btn-pung" onclick="act('pung')">PUNG</button>
-<button class="btn" id="btn-chow" onclick="act('chow')">CHOW</button>
 <button class="btn" onclick="act('skip')">Pass</button>
 </div>
 </div>
@@ -141,7 +140,7 @@ circle: (x,y,r,c) => `<circle cx="${x}" cy="${y}" r="${r}" fill="${c}""")/>>`,
 rect: (x,y,w,h,c) => `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="${c}""")/>>`,
 get: (t, v) => {
 let g=''; const R='#d32f2f', G='#2e7d32', B='#1565c0';
-let idx = `<span class="corner-idx">${t==='honor'?v[0].toUpperCase():v}</span>`;
+let idx = `<span class="corner-idx">${t==='honor'?v.toUpperCase():v}</span>`;
 if(t==='dots') {
 if(v==1)
 g=SVG.circle(50,65,35,R)+SVG.circle(50,65,20,'white')+SVG.circle(50,65,10,R);
@@ -200,7 +199,7 @@ return idx + SVG.base(g);
 }
 };
 /* --- 2. LOGIC --- */
-let deck=[], players=[], discards=[], turn=0, lastT=null, paused=false, sortMode='suit';
+let deck=[], players=[], discards=[], turn=0, lastT=null, paused=false; // 'sortMode' removed
 const App = { data:
 JSON.parse(localStorage.getItem('mjV25'))||{coins:100,unlocked:['classic'],skin:'classic'},
 save(){localStorage.setItem('mjV25',JSON.stringify(this.data));this.update()},
@@ -304,10 +303,21 @@ z=document.getElementById('p'+pid);z.innerHTML='';players[pid].forEach(()=>{let
 e=document.createElement('div');e.className='tile-back
 '+(pid%2?'landscape':'portrait');z.appendChild(e)})});
 }
-function sortT(a,b){ return sortMode==='suit' ? (a.t==b.t?a.v-b.v:a.t>b.t?1:-1) :
-(a.v==b.v?a.t>b.t?1:-1:a.v-b.v); }
-window.toggleSort = ()=>{ sortMode=sortMode==='suit'?'num':'suit'; players[0].sort(sortT);
-render(); };
+
+function sortT(a,b){
+    // Fixed sort order: always sort by suit, then by value.
+    if (a.t === b.t) {
+        return a.v - b.v;
+    }
+    return a.t > b.t ? 1 : -1;
+}
+
+window.toggleSort = ()=>{
+    // Button just reapplies the fixed sort
+    players[0].sort(sortT);
+    render();
+};
+
 function same(a,b){return a.t==b.t&&a.v==b.v}
 function showAct(w,k,p,c){let
 b=document.getElementById('action-bar');b.style.display='flex';b.children[0].style.display=w?'blo
