@@ -6,56 +6,71 @@
     <title>Mahjong • Windows Game</title>
     <style>
         :root {
-            --bg-primary: #201F1E;
-            --bg-secondary: #252423;
-            --accent-primary: #0078D4;
-            --accent-secondary: #106EBE;
-            --surface: rgba(255,255,255,0.1);
-            --surface-alt: rgba(255,255,255,0.05);
-            --text-primary: #FFFFFF;
-            --text-secondary: #E1DFDD;
-            --border: rgba(255,255,255,0.2);
-            --success: #107C10;
-            --warning: #CA5010;
+            --black: #000000;
+            --red: #DC2626;
+            --green: #16A34A;
+            --white: #FFFFFF;
+            --light-gray: #F8FAFC;
+            --green-tile: #166534;
         }
         
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { 
             font-family: 'Segoe UI', -apple-system, sans-serif;
-            background: var(--bg-primary); color: var(--text-primary);
-            min-height: 100vh; overflow-x: hidden;
+            background: var(--white); color: var(--black);
+            min-height: 100vh;
         }
         
-        /* Fluent 2 Header */
+        /* Green Tile Wall */
+        #wall {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: repeating-linear-gradient(
+                90deg, 
+                transparent 0px, 
+                transparent 48px,
+                var(--green-tile) 48px,
+                var(--green-tile) 50px,
+                transparent 50px
+            ),
+            repeating-linear-gradient(
+                0deg,
+                transparent 0px,
+                transparent 48px,
+                var(--green-tile) 48px,
+                var(--green-tile) 50px,
+                transparent 50px
+            ),
+            linear-gradient(135deg, #ECFDF5 0%, #D1FAE5 100%);
+            z-index: -1;
+        }
+        
         #header {
-            background: var(--bg-secondary); backdrop-filter: blur(20px);
-            padding: 24px; border-bottom: 1px solid var(--border);
+            background: rgba(0,0,0,0.05); padding: 20px; border-bottom: 3px solid var(--green);
             display: flex; justify-content: space-between; align-items: center;
         }
         h1 { 
-            font-weight: 600; font-size: 28px; letter-spacing: -0.5px;
-            background: linear-gradient(135deg, var(--accent-primary), #40C4FF);
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            font-weight: 600; font-size: 28px; color: var(--black);
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
         }
         #coins { 
-            background: var(--surface); padding: 12px 20px; border-radius: 20px;
-            font-weight: 600; font-size: 16px; min-width: 120px; text-align: center;
+            background: var(--green); color: white; padding: 12px 20px; 
+            border-radius: 20px; font-weight: 600; font-size: 16px;
         }
         
         #main {
-            max-width: 1200px; margin: 0 auto; padding: 32px 24px;
-            display: grid; grid-template-rows: auto 1fr auto; min-height: calc(100vh - 120px);
+            max-width: 1200px; margin: 20px auto; padding: 20px;
+            display: grid; grid-template-rows: auto 1fr auto;
         }
         
-        /* Fluent Table */
         #table {
-            background: var(--surface); border-radius: 24px; padding: 32px;
-            backdrop-filter: blur(40px); border: 1px solid var(--border);
+            background: rgba(255,255,255,0.9); border-radius: 20px; 
+            padding: 30px; border: 4px solid var(--green);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
             display: grid; grid-template-areas: 
                 "top    top    top"
                 "left   center right"
                 "bot    bot    bot";
-            gap: 24px; height: 100%; box-shadow: 0 32px 64px rgba(0,0,0,0.4);
+            gap: 20px; min-height: 600px;
         }
         
         .player.top    { grid-area: top; }
@@ -65,156 +80,150 @@
         #center        { grid-area: center; }
         
         .player {
-            background: var(--surface-alt); border-radius: 16px; padding: 24px;
-            backdrop-filter: blur(20px); border: 1px solid var(--border);
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            background: white; border-radius: 16px; padding: 20px;
+            border: 2px solid #E2E8F0; box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+            transition: all 0.2s;
         }
-        .player:hover { transform: translateY(-2px); box-shadow: 0 16px 32px rgba(0,0,0,0.3); }
+        .player:hover { transform: translateY(-2px); box-shadow: 0 12px 35px rgba(0,0,0,0.15); }
         
         .player.bot { 
-            background: linear-gradient(145deg, rgba(0,120,212,0.15), var(--surface-alt));
-            border-color: var(--accent-primary); min-height: 220px;
+            background: linear-gradient(145deg, #F0FDF4, white);
+            border-color: var(--green); min-height: 200px;
         }
         
         .name { 
-            font-weight: 600; font-size: 18px; margin-bottom: 16px;
-            padding-bottom: 8px; border-bottom: 1px solid var(--border);
+            font-weight: 600; font-size: 20px; margin-bottom: 16px;
+            color: var(--black); text-align: center;
         }
-        .bot .name { color: var(--accent-primary); }
-        .robot .name { color: #FF8C00; }
+        .bot .name { color: var(--green); }
+        .robot .name { color: var(--red); }
         
         .hand {
-            display: flex; flex-wrap: wrap; justify-content: center; gap: 6px;
-            min-height: 80px; padding: 12px 0;
+            display: flex; flex-wrap: wrap; justify-content: center; gap: 8px;
+            min-height: 90px; padding: 12px;
         }
         
         .tile {
-            width: 40px; height: 56px; background: linear-gradient(145deg, #FAF9F8, #EDEBE9);
-            border: 1px solid #A19F9D; border-radius: 8px;
+            width: 45px; height: 60px; 
+            background: linear-gradient(145deg, white, #F8FAFC);
+            border: 2px solid #CBD5E1; border-radius: 8px;
             display: flex; align-items: center; justify-content: center;
-            font-size: 24px; cursor: pointer; position: relative;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+            font-size: 26px; cursor: pointer; position: relative;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            transition: all 0.2s;
         }
         .tile.back {
-            background: linear-gradient(145deg, #605E5C, #484644) !important;
-            color: transparent !important; border-color: #484644;
+            background: linear-gradient(145deg, var(--green-tile), #15803D) !important;
+            color: transparent !important; border-color: var(--green);
         }
         .tile.back::after { 
-            content: '🀄'; opacity: 0.3; font-size: 18px; 
+            content: '🀄'; opacity: 0.8; font-size: 20px; 
+            color: white; text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
         }
         .tile:hover:not(.back) { 
-            transform: translateY(-2px) scale(1.05); 
-            box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+            transform: translateY(-3px); box-shadow: 0 8px 25px rgba(0,0,0,0.2);
         }
         .tile.selected { 
-            border-color: var(--accent-primary) !important; 
-            background: linear-gradient(145deg, #40C4FF, #0078D4);
-            box-shadow: 0 0 0 2px var(--accent-primary), 0 8px 24px rgba(0,120,212,0.4);
-            transform: scale(1.08);
+            border-color: var(--red) !important; 
+            box-shadow: 0 0 0 3px rgba(220,38,38,0.3), 0 8px 25px rgba(0,0,0,0.3);
+            transform: scale(1.1);
         }
         .tile.discard { 
-            background: linear-gradient(145deg, #F3F2F1, #EDEBE9); 
-            transform: rotate(3deg) translateY(2px);
+            background: #F1F5F9; transform: rotate(5deg); 
+            border-color: var(--red);
         }
         
         #center {
-            background: rgba(32,31,30,0.8); border-radius: 16px; padding: 24px;
-            backdrop-filter: blur(20px); border: 1px solid var(--border);
+            background: white; border-radius: 16px; padding: 24px;
+            border: 2px solid #E2E8F0; box-shadow: 0 8px 25px rgba(0,0,0,0.1);
         }
         #status { 
-            font-size: 20px; font-weight: 600; margin-bottom: 20px; 
-            padding: 12px 20px; background: var(--surface); border-radius: 12px;
+            font-size: 22px; font-weight: 600; margin-bottom: 20px; 
+            color: var(--black); padding: 16px; 
+            background: #F0FDF4; border: 2px solid var(--green);
+            border-radius: 12px; text-align: center;
         }
         #discard-pile { 
-            display: flex; flex-wrap: wrap; gap: 8px; justify-content: center;
-            padding: 16px; background: var(--surface-alt); border-radius: 12px;
+            display: flex; flex-wrap: wrap; gap: 10px; justify-content: center;
+            padding: 20px; background: #F8FAFC; border-radius: 12px;
+            border: 1px solid #E2E8F0;
         }
         
         #controls {
-            display: flex; gap: 12px; justify-content: center; padding: 24px;
-            background: var(--bg-secondary); border-top: 1px solid var(--border);
-            border-radius: 0 0 24px 24px;
+            display: flex; gap: 16px; justify-content: center; padding: 24px;
+            background: rgba(0,0,0,0.03); border-top: 3px solid var(--green);
+            border-radius: 0 0 20px 20px;
         }
         button {
-            padding: 14px 28px; border: none; background: var(--accent-primary);
-            color: white; border-radius: 12px; cursor: pointer; font-weight: 600;
-            font-size: 15px; font-family: inherit; min-width: 140px;
-            box-shadow: 0 4px 12px rgba(0,120,212,0.3);
-            transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+            padding: 14px 28px; border: 2px solid var(--black); 
+            background: white; color: var(--black);
+            border-radius: 10px; cursor: pointer; font-weight: 600;
+            font-size: 16px; font-family: inherit; transition: all 0.2s;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
         }
         button:hover:not(:disabled) { 
-            background: var(--accent-secondary); 
-            transform: translateY(-1px); box-shadow: 0 8px 20px rgba(0,120,212,0.4);
+            background: var(--green); color: white; 
+            transform: translateY(-2px); box-shadow: 0 8px 20px rgba(22,163,74,0.3);
         }
         button:disabled { 
-            background: #484644; cursor: not-allowed; opacity: 0.6;
-            transform: none; box-shadow: none;
+            background: #E2E8F0; color: #64748B; cursor: not-allowed;
+            transform: none; box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
         
-        /* Fluent Shop */
         #shop {
-            position: fixed; top: 24px; right: 24px; background: var(--bg-secondary);
-            border: 1px solid var(--border); border-radius: 16px; padding: 24px;
-            max-width: 320px; backdrop-filter: blur(20px); box-shadow: 0 16px 40px rgba(0,0,0,0.3);
+            position: fixed; top: 20px; right: 20px; background: white;
+            border: 2px solid var(--green); border-radius: 16px; padding: 24px;
+            max-width: 320px; box-shadow: 0 20px 40px rgba(0,0,0,0.15);
         }
         #shop h3 { 
-            font-weight: 600; font-size: 18px; margin-bottom: 20px; 
-            color: var(--text-primary); padding-bottom: 12px; border-bottom: 1px solid var(--border);
+            font-weight: 600; font-size: 20px; margin-bottom: 20px; 
+            color: var(--black); border-bottom: 2px solid var(--green);
+            padding-bottom: 12px;
         }
         .shop-item { 
             display: flex; justify-content: space-between; align-items: center;
-            padding: 16px; margin: 8px 0; background: var(--surface); border-radius: 12px;
-            transition: background 0.2s;
+            padding: 16px; margin: 8px 0; background: #F8FAFC; 
+            border-radius: 12px; border: 1px solid #E2E8F0;
         }
-        .shop-item:hover { background: rgba(255,255,255,0.15); }
+        .shop-item:hover { border-color: var(--green); }
         .shop-item button { 
-            padding: 10px 20px; font-size: 14px; min-width: auto; 
-            background: var(--success); box-shadow: 0 2px 8px rgba(16,124,16,0.3);
+            background: var(--green); color: white; border: none;
+            padding: 10px 20px; border-radius: 8px; font-weight: 600;
         }
-        .shop-item button:hover { background: #148514; }
         
         @media (max-width: 768px) {
             #shop { position: static; margin: 0 -16px 20px; border-radius: 0; }
-            #controls { flex-wrap: wrap; gap: 8px; }
-            .tile { width: 36px; height: 50px; font-size: 20px; }
+            #controls { flex-wrap: wrap; gap: 12px; }
+            .tile { width: 38px; height: 52px; font-size: 22px; }
         }
     </style>
 </head>
 <body>
-    <!-- Fluent Shop -->
+    <div id="wall"></div>
+    
     <div id="shop">
         <h3>🛒 Mahjong Store</h3>
         <div class="shop-item">
             <div>
-                <div style="font-weight: 600; margin-bottom: 4px;">Classic Tiles</div>
-                <div style="font-size: 14px; color: var(--text-secondary);">Traditional bamboo design</div>
+                <div style="font-weight: 600; color: var(--black);">Classic Tiles</div>
+                <div style="font-size: 14px; color: #64748B;">Traditional design</div>
             </div>
             <button onclick="buyItem(1)">50 coins</button>
         </div>
         <div class="shop-item">
             <div>
-                <div style="font-weight: 600; margin-bottom: 4px;">Premium Tiles</div>
-                <div style="font-size: 14px; color: var(--text-secondary);">Gold-trimmed luxury</div>
+                <div style="font-weight: 600; color: var(--black);">Premium Tiles</div>
+                <div style="font-size: 14px; color: #64748B;">Luxury finish</div>
             </div>
             <button onclick="buyItem(2)">120 coins</button>
         </div>
-        <div class="shop-item">
-            <div>
-                <div style="font-weight: 600; margin-bottom: 4px;">Pro AI</div>
-                <div style="font-size: 14px; color: var(--text-secondary);">Smart robot opponents</div>
-            </div>
-            <button onclick="buyItem(3)">80 coins</button>
-        </div>
     </div>
     
-    <!-- Game Header -->
     <div id="header">
         <h1>🀄 Mahjong</h1>
         <div id="coins">💰 150 coins</div>
     </div>
     
-    <!-- Main Game -->
     <div id="main">
         <div id="table">
             <div class="player top robot">
@@ -238,9 +247,9 @@
             </div>
             
             <div id="center">
-                <div id="status" style="background: rgba(0,120,212,0.2);">Round 1 • Your turn</div>
+                <div id="status">Round 1 • Your turn</div>
                 <div id="discard-pile"></div>
-                <div style="margin-top: 16px; font-size: 14px; color: var(--text-secondary);">
+                <div style="margin-top: 16px; font-size: 14px; color: var(--black);">
                     Tiles left: <span id="tilesLeft">144</span>
                 </div>
             </div>
@@ -299,7 +308,7 @@
             game.tilesLeft -= 64;
             
             renderAll();
-            updateStatus('Round 1 • Your turn');
+            document.getElementById('status').textContent = 'Round 1 • Your turn';
             document.getElementById('discardBtn').disabled = false;
             updateCoins();
         }
@@ -354,7 +363,7 @@
             game.tilesLeft--;
             
             renderAll();
-            updateStatus('Robots thinking...');
+            document.getElementById('status').textContent = 'Robots thinking...';
             document.getElementById('discardBtn').disabled = true;
             
             setTimeout(robotRound, 800);
@@ -365,7 +374,7 @@
             let i = 0;
             function nextRobot() {
                 if (i >= robots.length) {
-                    updateStatus(`Round ${game.round} • Your turn`);
+                    document.getElementById('status').textContent = `Round ${game.round} • Your turn`;
                     document.getElementById('discardBtn').disabled = false;
                     return;
                 }
@@ -393,10 +402,6 @@
             deal();
         }
         
-        function updateStatus(msg) {
-            document.getElementById('status').textContent = msg;
-        }
-        
         function updateUI() {
             document.getElementById('tilesLeft').textContent = game.tilesLeft;
         }
@@ -410,13 +415,12 @@
             if (game.coins >= prices[id-1]) {
                 game.coins -= prices[id-1];
                 updateCoins();
-                alert(`Purchased item ${id}! Feature coming soon.`);
+                alert(`Purchased item ${id}!`);
             } else {
-                alert('Insufficient coins!');
+                alert('Not enough coins!');
             }
         }
         
-        // Initialize
         document.getElementById('discardBtn').onclick = discardSelected;
         deal();
     </script>
