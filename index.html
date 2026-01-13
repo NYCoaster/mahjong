@@ -10,53 +10,89 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { 
             font-family: 'Roboto', Arial, sans-serif; 
-            min-height: 100vh; overflow-x: hidden; position: relative;
-            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 50%, #ff6b6b 100%);
+            min-height: 100vh; overflow-x: hidden; 
+            background: linear-gradient(135deg, #2c1810 0%, #1a0f0b 50%, #3d2b1f 100%);
+            position: relative;
         }
         
-        #bg-pattern {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background-image: 
-                radial-gradient(circle at 20% 80%, rgba(255,255,255,0.1) 0%, transparent 50%),
-                radial-gradient(circle at 80% 20%, rgba(255,255,255,0.1) 0%, transparent 50%);
-            animation: drift 20s ease-in-out infinite; z-index: -1;
+        /* Mahjong Table Background */
+        #table-bg {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1;
+            background: 
+                radial-gradient(ellipse at center, rgba(139,69,19,0.3) 0%, transparent 70%),
+                repeating-linear-gradient(90deg, transparent, transparent 49px, rgba(0,0,0,0.1) 50px, rgba(0,0,0,0.1) 51px, transparent 52px);
         }
-        @keyframes drift {
-            0%, 100% { transform: translate(0, 0) rotate(0deg); }
-            33% { transform: translate(30px, -30px) rotate(1deg); }
-            66% { transform: translate(-20px, 20px) rotate(-1deg); }
+        #table-felt {
+            position: absolute; top: 50%; left: 50%; width: 80%; height: 60%; 
+            transform: translate(-50%, -50%); background: radial-gradient(ellipse, #228B22 0%, #006400 70%);
+            border: 40px solid #8B4513; border-radius: 20px; box-shadow: inset 0 0 50px rgba(0,0,0,0.5);
         }
         
         #game-container { display: flex; flex-direction: column; align-items: center; padding: 20px; min-height: 100vh; position: relative; z-index: 1; }
         
-        #ui { text-align: center; color: #fff; margin: 20px; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); background: rgba(0,0,0,0.3); padding: 25px; border-radius: 20px; backdrop-filter: blur(10px); }
-        h1 { font-size: 2.5em; margin-bottom: 10px; background: linear-gradient(45deg, #fff, #ffd700); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+        #ui { text-align: center; color: #fff; margin: 20px; text-shadow: 2px 2px 4px rgba(0,0,0,0.8); background: rgba(0,0,0,0.7); padding: 25px; border-radius: 15px; border: 3px solid #D4AF37; }
+        h1 { font-size: 2.5em; margin-bottom: 10px; background: linear-gradient(45deg, #D4AF37, #FFD700); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
         #status { font-size: 18px; margin: 10px 0; }
-        button { padding: 12px 24px; font-size: 16px; margin: 5px; border: none; border-radius: 12px; background: linear-gradient(145deg, #28a745, #20c997); color: white; cursor: pointer; font-weight: bold; box-shadow: 0 6px 20px rgba(40,167,69,0.4); transition: all 0.3s; border: 2px solid rgba(255,255,255,0.3); }
-        button:hover { transform: translateY(-3px); box-shadow: 0 10px 30px rgba(40,167,69,0.6); }
-        button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+        button { padding: 12px 24px; font-size: 16px; margin: 5px; border: 2px solid #D4AF37; border-radius: 8px; background: linear-gradient(145deg, #8B4513, #A0522D); color: white; cursor: pointer; font-weight: bold; box-shadow: 0 4px 15px rgba(0,0,0,0.5); transition: all 0.3s; }
+        button:hover { background: linear-gradient(145deg, #A0522D, #D2691E); transform: translateY(-2px); }
         
-        #game { display: grid; grid-template-columns: repeat(20, 1fr); gap: 3px; max-width: 900px; margin: 20px auto; position: relative; padding: 20px; background: rgba(255,255,255,0.05); border-radius: 20px; }
-        .tile { aspect-ratio: 1; background: linear-gradient(145deg, #f8f9fa, #e9ecef); border: 3px solid #495057; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: bold; cursor: pointer; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); position: relative; box-shadow: 0 6px 20px rgba(0,0,0,0.2); text-shadow: 1px 1px 1px rgba(255,255,255,0.8); }
-        .tile::before { content: attr(data-pips); position: absolute; top: 3px; font-size: 12px; color: #666; font-weight: normal; }
-        .tile.robot-selected { border-color: #ff6b6b !important; box-shadow: 0 0 30px rgba(255,107,107,0.8); animation: robot-glow 0.6s infinite alternate; }
-        @keyframes robot-glow { 0% { box-shadow: 0 0 20px rgba(255,107,107,0.6); } 100% { box-shadow: 0 0 40px rgba(255,107,107,1); } }
+        #game { 
+            display: grid; grid-template-columns: repeat(20, 1fr); gap: 4px; 
+            max-width: 1000px; margin: 20px auto; padding: 30px; 
+            background: linear-gradient(145deg, #654321, #8B4513); border: 8px solid #D4AF37;
+            border-radius: 20px; box-shadow: 0 20px 40px rgba(0,0,0,0.7), inset 0 0 30px rgba(255,255,255,0.1);
+            position: relative;
+        }
+        #game::before {
+            content: ''; position: absolute; top: -10px; left: 50%; transform: translateX(-50%);
+            width: 60px; height: 60px; background: radial-gradient(circle, #FFD700, #D4AF37); border-radius: 50%;
+            box-shadow: 0 0 20px rgba(255,215,0,0.5);
+        }
+        
+        .tile { 
+            aspect-ratio: 1; 
+            background: linear-gradient(145deg, #F5DEB3 0%, #D2B48C 50%, #DEB887 100%); 
+            border: 4px solid #8B4513; border-radius: 6px; 
+            display: flex; align-items: center; justify-content: center; 
+            font-size: 28px; font-weight: bold; cursor: pointer; 
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
+            position: relative; box-shadow: 
+                0 8px 20px rgba(0,0,0,0.4), 
+                inset 0 2px 4px rgba(255,255,255,0.3),
+                inset 0 -2px 4px rgba(0,0,0,0.2);
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+            min-height: 50px;
+        }
+        .tile::before { 
+            content: attr(data-pips); position: absolute; top: 4px; font-size: 14px; 
+            color: #8B4513; font-weight: normal; text-shadow: none;
+        }
+        .tile:hover { transform: translateY(-4px); box-shadow: 0 12px 30px rgba(0,0,0,0.6); }
+        .tile.robot-selected { 
+            border-color: #FF4500 !important; 
+            box-shadow: 0 0 40px rgba(255,69,0,0.9), inset 0 0 20px rgba(255,69,0,0.3) !important; 
+            animation: robot-glow 0.8s infinite alternate; 
+        }
+        @keyframes robot-glow { 0% { box-shadow: 0 0 30px rgba(255,69,0,0.7); } 100% { box-shadow: 0 0 50px rgba(255,69,0,1); } }
         .tile.matched { visibility: hidden; animation: explode 0.6s; }
-        .tile.open { border-color: #28a745; transform: scale(1.08) translateY(-8px); box-shadow: 0 12px 40px rgba(40,167,69,0.6); }
-        .tile.disabled { opacity: 0.4; cursor: not-allowed; }
-        @keyframes explode { to { transform: scale(0) rotate(180deg); opacity: 0; } }
+        .tile.open { border-color: #32CD32; transform: scale(1.1) translateY(-10px); box-shadow: 0 15px 40px rgba(50,205,50,0.7); }
+        .tile.disabled { opacity: 0.3; cursor: not-allowed; }
+        .tile.empty { background: rgba(139,69,19,0.3); border-color: rgba(139,69,19,0.5); cursor: default; opacity: 0.1; }
+        @keyframes explode { to { transform: scale(0) rotate(360deg); opacity: 0; } }
         
-        @media (max-width: 768px) { #game { grid-template-columns: repeat(18, 1fr); gap: 2px; } .tile { font-size: 20px; } }
-        @media (max-width: 480px) { #game { grid-template-columns: repeat(16, 1fr); } }
+        @media (max-width: 768px) { #game { grid-template-columns: repeat(18, 1fr); gap: 3px; padding: 20px; } .tile { font-size: 24px; min-height: 40px; } }
+        @media (max-width: 480px) { #game { grid-template-columns: repeat(16, 1fr); } .tile { font-size: 20px; } }
     </style>
 </head>
 <body>
-    <div id="bg-pattern"></div>
+    <div id="table-bg">
+        <div id="table-felt"></div>
+    </div>
     
     <div id="game-container">
         <div id="ui">
             <h1>🀄 Taiwanese Mahjong vs 🤖 Robot</h1>
-            <div id="status">Waiting for player move...</div>
+            <div id="status">Loading tiles...</div>
             <div id="moves">Moves: <span id="playerMoves">0</span> | Robot: <span id="robotMoves">0</span></div>
             <button id="robotToggle">🚫 Disable Robot</button>
             <button onclick="newGame()">🔄 New Game</button>
@@ -66,53 +102,58 @@
     </div>
 
     <script>
+        // Taiwanese Mahjong tiles (1-9 Wan, Tong, Tiao)
         const taiwaneseTiles = ['🀇','🀈','🀉','🀊','🀋','🀌','🀍','🀎','🀏','🀙','🀚','🀛','🀜','🀝','🀞','🀟','🀠','🀡','🀐','🀑','🀒','🀓','🀔','🀕','🀖','🀗','🀘'];
         let board = [], openTiles = [], playerMoves = 0, robotMoves = 0, robotEnabled = true, robotTurn = false;
         
         function initBoard() {
-            // FIXED: Proper pyramid layout counting exactly 144 tiles
-            const pyramidLayout = [
-                [0,0,0,0,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0], // 8 tiles
-                [0,0,0,1,2,2,2,2,2,2,2,2,2,1,1,0,0,0,0,0], // 12 tiles  
-                [0,0,1,2,3,3,3,3,3,3,3,3,2,1,1,1,0,0,0,0], // 16 tiles
-                [0,1,2,3,4,4,4,4,4,4,4,4,3,2,1,1,1,0,0,0], // 18 tiles
-                [1,2,3,4,5,5,5,5,5,5,5,5,4,3,2,1,1,0,0,0], // 20 tiles
-                [2,3,4,5,6,6,6,6,6,6,6,6,5,4,3,2,1,1,0,0], // 20 tiles
-                [3,4,5,6,7,7,7,7,7,7,7,7,6,5,4,3,2,1,1,0], // 20 tiles
-                [4,5,6,7,8,8,8,8,8,8,8,8,7,6,5,4,3,2,1,1]  // 20 tiles
-            ];
+            document.getElementById('status').textContent = 'Generating pyramid...';
             
+            // Classic Taiwanese pyramid (144 tiles total)
+            const pyramidRows = 8;
+            const cols = 20;
+            let tileCount = 0;
+            
+            // Create exactly 144 tiles
             let tileDeck = [];
-            for (let i = 0; i < 4; i++) tileDeck.push(...taiwaneseTiles); // 4 full sets = 144 tiles
-            shuffle(tileDeck);
-            
-            let flatBoard = [];
-            let tileIndex = 0;
-            pyramidLayout.forEach(row => {
-                row.forEach(hasTile => {
-                    flatBoard.push(hasTile ? tileDeck[tileIndex++] : 0);
-                });
-            });
-            
-            // FIXED: Proper 2D board creation
-            board = [];
-            for (let i = 0; i < flatBoard.length; i += 20) {
-                board.push(flatBoard.slice(i, i + 20));
+            for (let i = 0; i < 4; i++) { // 4 complete sets
+                tileDeck.push(...taiwaneseTiles);
             }
+            tileDeck = shuffle(tileDeck.slice(0, 144)); // Exactly 144 tiles
+            
+            // Build pyramid layout
+            board = [];
+            for (let row = 0; row < pyramidRows; row++) {
+                let rowTiles = [];
+                let tilesInRow = Math.min(8 + row * 2, cols);
+                let startCol = Math.floor((cols - tilesInRow) / 2);
+                
+                for (let col = 0; col < cols; col++) {
+                    if (col >= startCol && col < startCol + tilesInRow && tileCount < 144) {
+                        rowTiles.push(tileDeck[tileCount++]);
+                    } else {
+                        rowTiles.push(null);
+                    }
+                }
+                board.push(rowTiles);
+            }
+            
+            document.getElementById('status').textContent = 'Ready! Your turn.';
             renderBoard();
         }
         
-        function shuffle(array) { 
+        function shuffle(array) {
             for (let i = array.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
                 [array[i], array[j]] = [array[j], array[i]];
             }
-            return array; 
+            return array;
         }
         
         function renderBoard() {
             const gameEl = document.getElementById('game');
             gameEl.innerHTML = '';
+            
             board.forEach((row, y) => {
                 row.forEach((tile, x) => {
                     const tileEl = document.createElement('div');
@@ -123,7 +164,6 @@
                         tileEl.onclick = () => selectTile(x, y, false);
                     } else {
                         tileEl.className = 'tile empty';
-                        tileEl.style.opacity = '0.1';
                     }
                     gameEl.appendChild(tileEl);
                 });
@@ -132,7 +172,11 @@
         }
         
         function getPips(tile) {
-            const pips = {'🀇':'1','🀈':'2','🀉':'3','🀊':'4','🀋':'5','🀌':'6','🀍':'7','🀎':'8','🀏':'9','🀙':'1','🀚':'2','🀛':'3','🀜':'4','🀝':'5','🀞':'6','🀟':'7','🀠':'8','🀡':'9'};
+            const pips = {
+                '🀇':'1','🀈':'2','🀉':'3','🀊':'4','🀋':'5','🀌':'6','🀍':'7','🀎':'8','🀏':'9', // Wan
+                '🀙':'1','🀚':'2','🀛':'3','🀜':'4','🀝':'5','🀞':'6','🀟':'7','🀠':'8','🀡':'9', // Tong
+                '🀐':'1','🀑':'2','🀒':'3','🀓':'4','🀔':'5','🀕':'6','🀖':'7','🀗':'8','🀘':'9'  // Tiao
+            };
             return pips[tile] || '';
         }
         
@@ -140,40 +184,48 @@
             if (!board[y] || !board[y][x] || openTiles.some(([ox, oy]) => ox === x && oy === y) || !isFree(x, y)) return;
             
             const tile = board[y][x];
-            const tileEl = document.querySelectorAll('.tile')[y * 20 + x];
+            const tileIndex = y * 20 + x;
+            const tileEl = document.querySelectorAll('.tile')[tileIndex];
+            
             openTiles.push([x, y]);
             tileEl.classList.add('open');
             
-            if (isRobot) tileEl.classList.add('robot-selected');
+            if (isRobot) {
+                tileEl.classList.add('robot-selected');
+                robotMoves++;
+            } else {
+                playerMoves++;
+            }
+            
+            updateUI();
             
             if (openTiles.length === 2) {
                 const [[x1, y1]] = openTiles;
-                (isRobot ? robotMoves : playerMoves)++;
-                updateUI();
-                
                 if (board[y1][x1] !== tile) {
-                    setTimeout(() => closeMismatch(), 1000);
+                    setTimeout(() => closeMismatch(), 800);
                 } else {
-                    setTimeout(() => matchSuccess(x, y, x1, y1), 1000);
+                    setTimeout(() => matchSuccess(x, y, x1, y1), 800);
                 }
             }
             updateDisabled();
         }
         
         function robotMove() {
-            if (!robotEnabled || openTiles.length > 0 || board.flat().filter(t => t).length < 2) return;
+            if (!robotEnabled || openTiles.length > 0) return;
             
             for (let y1 = 0; y1 < board.length; y1++) {
                 for (let x1 = 0; x1 < 20; x1++) {
-                    if (board[y1] && board[y1][x1] && isFree(x1, y1)) {
+                    if (board[y1][x1] && isFree(x1, y1)) {
                         for (let y2 = 0; y2 < board.length; y2++) {
                             for (let x2 = 0; x2 < 20; x2++) {
-                                if ((x2 !== x1 || y2 !== y1) && board[y2] && board[y2][x2] === board[y1][x1] && isFree(x2, y2)) {
+                                if ((x2 !== x1 || y2 !== y1) && board[y2][x2] === board[y1][x1] && isFree(x2, y2)) {
                                     robotTurn = true;
                                     selectTile(x1, y1, true);
                                     setTimeout(() => {
-                                        if (openTiles.length === 1) selectTile(x2, y2, true);
-                                    }, 500);
+                                        if (openTiles.length === 1) {
+                                            selectTile(x2, y2, true);
+                                        }
+                                    }, 400);
                                     return;
                                 }
                             }
@@ -188,31 +240,36 @@
                 const tileEl = document.querySelectorAll('.tile')[y * 20 + x];
                 tileEl.classList.remove('open', 'robot-selected');
             });
-            openTiles = []; robotTurn = false; updateDisabled();
-            if (robotEnabled) setTimeout(robotMove, 1000);
+            openTiles = [];
+            robotTurn = false;
+            updateDisabled();
+            if (robotEnabled) setTimeout(robotMove, 800);
         }
         
         function matchSuccess(x2, y2, x1, y1) {
-            [[x1,y1],[x2,y2]].forEach(([x,y]) => {
-                board[y][x] = 0;
-                const tileEl = document.querySelectorAll('.tile')[y * 20 + x];
-                tileEl.classList.add('matched');
-            });
-            openTiles = []; robotTurn = false; checkWin(); updateDisabled();
-            if (robotEnabled && !checkWin()) setTimeout(robotMove, 1500);
+            board[y1][x1] = null;
+            board[y2][x2] = null;
+            document.querySelectorAll('.tile')[y1 * 20 + x1].classList.add('matched');
+            document.querySelectorAll('.tile')[y2 * 20 + x2].classList.add('matched');
+            openTiles = [];
+            robotTurn = false;
+            checkWin();
+            updateDisabled();
+            if (robotEnabled) setTimeout(robotMove, 1200);
         }
         
         function isFree(x, y) {
-            if (!board[y]) return false;
-            const leftFree = x === 0 || board[y][x-1] === 0;
-            const rightFree = x === 19 || board[y][x+1] === 0;
-            const topFree = y === 0 || board[y-1][x] === 0;
+            if (!board[y] || !board[y][x]) return false;
+            const leftFree = x === 0 || !board[y][x-1];
+            const rightFree = x === 19 || !board[y][x+1];
+            const topFree = y === 0 || !board[y-1][x];
             return (leftFree || rightFree) && topFree;
         }
         
         function updateDisabled() {
             document.querySelectorAll('.tile').forEach((el, i) => {
-                const x = i % 20, y = Math.floor(i / 20);
+                const x = i % 20;
+                const y = Math.floor(i / 20);
                 if (board[y]?.[x] && !el.classList.contains('open') && !el.classList.contains('matched')) {
                     el.classList.toggle('disabled', !isFree(x, y));
                 }
@@ -226,45 +283,54 @@
         }
         
         function checkWin() {
-            if (board.flat().every(t => t === 0)) {
-                setTimeout(() => alert(`🎉 Victory!\nYou: ${playerMoves} moves | Robot: ${robotMoves} moves`), 500);
-                return true;
+            const tilesLeft = board.flat().filter(t => t).length;
+            if (tilesLeft === 0) {
+                setTimeout(() => {
+                    alert(`🎉 Victory!\nYou: ${playerMoves} moves | Robot: ${robotMoves} moves`);
+                }, 500);
             }
-            return false;
         }
         
         function toggleRobot() {
             robotEnabled = !robotEnabled;
             const btn = document.getElementById('robotToggle');
             btn.textContent = robotEnabled ? '🚫 Disable Robot' : '▶️ Enable Robot';
-            if (robotEnabled) setTimeout(robotMove, 1000);
         }
         
         function newGame() {
-            playerMoves = robotMoves = 0; openTiles = []; robotTurn = false; robotEnabled = true;
+            playerMoves = robotMoves = 0;
+            openTiles = [];
+            robotTurn = false;
+            robotEnabled = true;
             document.getElementById('robotToggle').textContent = '🚫 Disable Robot';
-            initBoard(); updateUI();
+            initBoard();
         }
         
         function hint() {
-            for (let y1 = 0; y1 < board.length; y1++) for (let x1 = 0; x1 < 20; x1++) {
-                if (board[y1]?.[x1] && isFree(x1, y1)) for (let y2 = 0; y2 < board.length; y2++) for (let x2 = 0; x2 < 20; x2++) {
-                    if ((x2 !== x1 || y2 !== y1) && board[y2]?.[x2] === board[y1][x1] && isFree(x2, y2)) {
-                        document.querySelectorAll('.tile')[y1*20 + x1].style.boxShadow = '0 0 30px #ffd700';
-                        setTimeout(() => document.querySelectorAll('.tile')[y1*20 + x1].style.boxShadow = '', 2000);
-                        return;
+            for (let y1 = 0; y1 < board.length; y1++) {
+                for (let x1 = 0; x1 < 20; x1++) {
+                    if (board[y1][x1] && isFree(x1, y1)) {
+                        for (let y2 = 0; y2 < board.length; y2++) {
+                            for (let x2 = 0; x2 < 20; x2++) {
+                                if ((x2 !== x1 || y2 !== y1) && board[y2][x2] === board[y1][x1] && isFree(x2, y2)) {
+                                    document.querySelectorAll('.tile')[y1 * 20 + x1].style.boxShadow = '0 0 30px #FFD700';
+                                    setTimeout(() => {
+                                        document.querySelectorAll('.tile')[y1 * 20 + x1].style.boxShadow = '';
+                                    }, 2000);
+                                    return;
+                                }
+                            }
+                        }
                     }
                 }
             }
             alert('No available matches!');
         }
         
-        // Initialize everything
+        // Start the game
         document.getElementById('robotToggle').onclick = toggleRobot;
         initBoard();
-        updateUI();
-        setTimeout(() => { if (robotEnabled) robotMove(); }, 2000);
+        setTimeout(() => { if (robotEnabled) robotMove(); }, 1500);
     </script>
 </body>
 </html>
-
