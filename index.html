@@ -33,6 +33,49 @@ body.skin-neon {
 body.skin-neon .tile svg {
   filter: drop-shadow(0 0 1px var(--accent));
 }
+
+/* GOLD THEME */
+body.skin-gold {
+  --mica: #1b1b1b;
+  --surface: #2a1b00;
+  --text: #ffe9a3;
+  --border: #7b5b24;
+  --accent: #ffbf00;
+  --felt: #3a2900;
+  --wood: #8c6b1f;
+  --tile-face: #3b2b08;
+  --tile-back: #705000;
+  --tile-stroke: #ffbf00;
+}
+
+/* FOREST THEME */
+body.skin-forest {
+  --mica: #08110a;
+  --surface: #102017;
+  --text: #e4ffe8;
+  --border: #203828;
+  --accent: #3ddc84;
+  --felt: #062b16;
+  --wood: #28301f;
+  --tile-face: #193424;
+  --tile-back: #065535;
+  --tile-stroke: #3ddc84;
+}
+
+/* SAKURA THEME */
+body.skin-sakura {
+  --mica: #fff7fb;
+  --surface: #fff0f5;
+  --text: #402034;
+  --border: #f5c0d6;
+  --accent: #ff5c93;
+  --felt: #ffe6f0;
+  --wood: #f2b4c8;
+  --tile-face: #ffffff;
+  --tile-back: #ff85ad;
+  --tile-stroke: #ff5c93;
+}
+
 body {
   margin: 0;
   background: var(--mica);
@@ -45,7 +88,7 @@ body {
 }
 /* SIDEBAR */
 #sidebar {
-  width: 240px;
+  width: 260px;
   background: var(--surface);
   border-right: 1px solid var(--border);
   padding: 20px;
@@ -268,12 +311,16 @@ body {
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
   z-index: 200;
 }
+h1, h2, h3 {
+  margin-top: 0;
+}
 </style>
 </head>
 <body>
 <div id="sidebar">
   <h2 style="color:var(--accent)">🀄 Mahjong</h2>
   <div class="nav-btn active" onclick="nav('game')">▶ Play</div>
+  <div class="nav-btn" onclick="nav('howto')">📘 How to Play</div>
   <div class="nav-btn" onclick="nav('shop')">🛒 Shop</div>
   <div class="nav-btn" onclick="nav('settings')">⚙ Settings</div>
   <div style="flex:1"></div>
@@ -307,447 +354,33 @@ body {
     </div>
   </div>
 
-  <div id="page-shop" class="page">
-    <h1>Skin Shop</h1>
-    <div id="shop-grid" style="display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:20px"></div>
-  </div>
-
-  <div id="page-settings" class="page">
-    <h1>Settings</h1>
-    <button class="btn" style="background:#d32f2f; color:white; width:200px" onclick="resetData()">Reset Data</button>
-  </div>
-</div>
-
-<script>
-/* --- SVG ENGINE (no corner numbers) --- */
-const SVG = {
-  base: c => `<svg viewBox="0 0 100 130">${c}</svg>`,
-  circle: (x, y, r, c) =>
-    `<circle cx="${x}" cy="${y}" r="${r}" fill="${c}" />`,
-  rect: (x, y, w, h, c) =>
-    `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="${c}" />`,
-  get: (t, v) => {
-    let g = '';
-    const R = '#d32f2f', G = '#2e7d32', B = '#1565c0';
-    const idx = ''; // no corner-idx
-
-    if (t === 'dots') {
-      if (v == 1) {
-        g = SVG.circle(50, 65, 35, R)
-          + SVG.circle(50, 65, 20, 'white')
-          + SVG.circle(50, 65, 10, R);
-      } else if (v == 2) {
-        g = SVG.circle(50, 35, 18, G) + SVG.circle(50, 95, 18, B);
-      } else if (v == 3) {
-        g = SVG.circle(25, 30, 15, B)
-          + SVG.circle(50, 65, 15, R)
-          + SVG.circle(75, 100, 15, G);
-      } else if (v == 4) {
-        g = SVG.circle(30, 30, 15, B)
-          + SVG.circle(70, 30, 15, G)
-          + SVG.circle(30, 100, 15, G)
-          + SVG.circle(70, 100, 15, B);
-      } else if (v == 5) {
-        g = SVG.circle(25, 25, 12, B)
-          + SVG.circle(75, 25, 12, G)
-          + SVG.circle(50, 65, 12, R)
-          + SVG.circle(25, 105, 12, G)
-          + SVG.circle(75, 105, 12, B);
-      } else if (v == 6) {
-        g = SVG.circle(30, 30, 12, G)
-          + SVG.circle(70, 30, 12, G)
-          + SVG.circle(30, 60, 12, R)
-          + SVG.circle(70, 60, 12, R)
-          + SVG.circle(30, 90, 12, R)
-          + SVG.circle(70, 90, 12, R);
-      } else if (v == 7) {
-        g = SVG.circle(30, 20, 10, G)
-          + SVG.circle(50, 25, 10, G)
-          + SVG.circle(70, 30, 10, G)
-          + SVG.circle(30, 60, 12, R)
-          + SVG.circle(70, 60, 12, R)
-          + SVG.circle(30, 95, 12, R)
-          + SVG.circle(70, 95, 12, R);
-      } else if (v == 8) {
-        g = SVG.circle(30, 25, 12, B)
-          + SVG.circle(70, 25, 12, B)
-          + SVG.circle(30, 50, 12, B)
-          + SVG.circle(70, 50, 12, B)
-          + SVG.circle(30, 75, 12, B)
-          + SVG.circle(70, 75, 12, B)
-          + SVG.circle(30, 100, 12, B)
-          + SVG.circle(70, 100, 12, B);
-      } else if (v == 9) {
-        for (let r = 0; r < 3; r++) {
-          for (let c = 0; c < 3; c++) {
-            g += SVG.circle(25 + c * 25, 30 + r * 30, 11, [R, B, G][r]);
-          }
-        }
-      }
-    } else if (t === 'bamboo') {
-      if (v == 1) {
-        g = `<path d="M50,50 Q30,70 20,60 Q40,40 50,30 Q60,40 80,60 Q70,70 50,50 M50,70 L50,110 M30,110 L70,110" stroke="${G}" stroke-width="5" fill="none" />`;
-      } else if (v == 2) {
-        g = SVG.rect(35, 25, 10, 80, G) + SVG.rect(55, 25, 10, 80, G);
-      } else if (v == 3) {
-        g = SVG.rect(35, 60, 10, 50, G)
-          + SVG.rect(55, 60, 10, 50, G)
-          + SVG.rect(45, 20, 10, 30, B);
-      } else if (v == 4) {
-        g = SVG.rect(25, 25, 10, 80, G)
-          + SVG.rect(45, 25, 10, 80, B)
-          + SVG.rect(65, 25, 10, 80, G)
-          + SVG.rect(45, 25, 10, 80, B);
-      } else {
-        g = `<rect x="20" y="20" width="60" height="90" fill="none" stroke="${G}" stroke-width="3" />` +
-            `<text x="50" y="80" font-size="60" fill="${G}" text-anchor="middle" font-weight="bold">${v}</text>`;
-      }
-    } else if (t === 'chars') {
-      const ch = ['一','二','三','四','五','六','七','八','九'];
-      g = `<text x="50" y="60" font-size="45" text-anchor="middle" fill="#000" font-family="serif">${ch[v - 1]}</text>` +
-          `<text x="50" y="115" font-size="40" text-anchor="middle" fill="${R}" font-family="serif">萬</text>`;
-    } else {
-      const h = {
-        east: '東', south: '南', west: '西', north: '北',
-        red: '中', green: '發', white: ' '
-      };
-      const col = (v === 'red' || v === 'white') ? R : (v === 'green' ? G : '#000');
-      g = `<text x="50" y="95" font-size="70" text-anchor="middle" fill="${col}" font-family="serif">${h[v]}</text>`;
-      if (v === 'white') {
-        g += `<rect x="10" y="10" width="80" height="110" stroke="${B}" stroke-width="5" fill="none" />`;
-      }
-    }
-    return idx + SVG.base(g);
-  }
-};
-
-/* --- GAME STATE --- */
-let deck = [], players = [], discards = [], lastT = null, paused = false, sortMode = 'suit';
-
-const App = {
-  data: JSON.parse(localStorage.getItem('mjV25')) || { coins: 100, unlocked: ['classic'], skin: 'classic' },
-  save() {
-    localStorage.setItem('mjV25', JSON.stringify(this.data));
-    this.update();
-  },
-  update() {
-    document.getElementById('ui-coins').innerText = this.data.coins;
-    document.body.className = this.data.skin;
-  }
-};
-
-const SKINS = {
-  'classic': { name: 'Classic', cost: 0 },
-  'skin-neon': { name: 'Neon', cost: 200 },
-  'skin-gold': { name: 'Gold', cost: 500 }
-};
-
-/* --- INIT --- */
-function init() {
-  deck = [];
-  ['dots', 'bamboo', 'chars'].forEach(t => {
-    for (let i = 1; i <= 9; i++) {
-      for (let k = 0; k < 4; k++) deck.push({ t, v: i });
-    }
-  });
-  ['east','south','west','north','red','green','white'].forEach(v => {
-    for (let k = 0; k < 4; k++) deck.push({ t: 'honor', v });
-  });
-
-  deck.sort(() => Math.random() - 0.5);
-  players = [[], [], [], []];
-  discards = [];
-  lastT = null;
-  paused = false;
-
-  for (let i = 0; i < 16; i++) {
-    for (let p = 0; p < 4; p++) players[p].push(deck.pop());
-  }
-  players[0].sort(sortT);
-  render();
-  setTimeout(() => draw(0), 800);
-}
-
-/* --- WIN CHECKER --- */
-function isHu(tiles) {
-  if (tiles.length !== 14) return false;
-  const counts = {};
-  tiles.forEach(x => {
-    const k = x.t + ':' + x.v;
-    counts[k] = (counts[k] || 0) + 1;
-  });
-
-  for (const k in counts) {
-    if (counts[k] >= 2) {
-      const rem = { ...counts };
-      rem[k] -= 2;
-      if (checkSets(rem)) return true;
-    }
-  }
-  return false;
-}
-
-function checkSets(counts) {
-  let firstKey = null;
-  for (const k in counts) {
-    if (counts[k] > 0) {
-      firstKey = k;
-      break;
-    }
-  }
-  if (!firstKey) return true;
-
-  const [t, vStr] = firstKey.split(':');
-  const v = parseInt(vStr, 10);
-
-  if (counts[firstKey] >= 3) {
-    counts[firstKey] -= 3;
-    if (checkSets(counts)) return true;
-    counts[firstKey] += 3;
-  }
-
-  if (t === 'dots' || t === 'bamboo' || t === 'chars') {
-    if (v <= 7) {
-      const k2 = t + ':' + (v + 1);
-      const k3 = t + ':' + (v + 2);
-      if ((counts[k2] || 0) > 0 && (counts[k3] || 0) > 0) {
-        counts[firstKey]--;
-        counts[k2]--;
-        counts[k3]--;
-        if (checkSets(counts)) return true;
-        counts[firstKey]++;
-        counts[k2]++;
-        counts[k3]++;
-      }
-    }
-  }
-
-  return false;
-}
-
-function checkSelf(h) {
-  const c = {};
-  h.forEach(t => {
-    const k = t.t + ':' + t.v;
-    c[k] = (c[k] || 0) + 1;
-  });
-  for (const k in c) {
-    if (c[k] === 4) {
-      paused = true;
-      showAct(isHu(h), true, false, false);
-      const [tType, vStr] = k.split(':');
-      const tile = h.find(x => x.t === tType && String(x.v) === vStr);
-      lastT = { t: tile, from: 0 };
-      document.getElementById('btn-kong').innerText = 'KONG';
-    }
-  }
-}
-
-/* --- DRAW / DISCARD / ACTIONS --- */
-function draw(pid) {
-  if (deck.length === 0) return end('DRAW');
-  const t = deck.pop();
-  players[pid].push(t);
-  render(pid === 0);
-
-  if (pid === 0) {
-    checkSelf(players[0]);
-    if (isHu(players[0])) {
-      showAct(true, false, false, false);
-      paused = true;
-    }
-  } else {
-    setTimeout(() => {
-      const idx = Math.floor(Math.random() * players[pid].length);
-      discard(pid, idx);
-    }, 800);
-  }
-}
-
-function discard(pid, idx) {
-  const t = players[pid].splice(idx, 1)[0];
-  lastT = { t, from: pid };
-  discards.push(t);
-
-  if (pid === 0) players[0].sort(sortT);
-  render();
-
-  if (pid !== 0) {
-    const h = players[0].slice();
-    h.push(t);
-    if (isHu(h)) {
-      paused = true;
-      showAct(true, true, true, true);
-      return;
-    }
-  }
-
-  if (!paused) {
-    const next = (pid + 1) % 4;
-    setTimeout(() => draw(next), 500);
-  }
-}
-
-window.act = function(type) {
-  document.getElementById('action-bar').style.display = 'none';
-  if (!lastT) return;
-
-  const t = lastT.t;
-  const from = lastT.from;
-  const isSelf = from === 0;
-
-  if (type === 'hu') {
-    return end('VICTORY');
-  }
-
-  if (type === 'skip') {
-    paused = false;
-    const next = (from + 1) % 4;
-    return draw(next);
-  }
-
-  let needed = 2;
-  if (type === 'kong') needed = isSelf ? 4 : 3;
-  if (type === 'pung') needed = isSelf ? 3 : 2;
-  if (type === 'chow') needed = 2; // simplified
-
-  let taken = 0;
-  players[0] = players[0].filter(x => {
-    if (same(x, t) && taken < needed) {
-      taken++;
-      return false;
-    }
-    return true;
-  });
-
-  if (!isSelf && discards.length && same(discards[discards.length - 1], t)) {
-    discards.pop();
-  }
-
-  players[0].push(t);
-  players[0].sort(sortT);
-  render();
-
-  if (type === 'kong') {
-    paused = false;
-    return draw(0);
-  }
-
-  paused = false;
-};
-
-/* --- RENDER / HELPERS --- */
-function render(f = false) {
-  const center = document.getElementById('center');
-  center.innerHTML = '';
-  discards.forEach(t => {
-    const e = document.createElement('div');
-    e.className = 'discard';
-    e.innerHTML = SVG.get(t.t, t.v);
-    center.appendChild(e);
-  });
-
-  const p0 = document.getElementById('p0');
-  p0.innerHTML = '';
-  players[0].forEach((t, i) => {
-    const e = document.createElement('div');
-    e.className = 'tile portrait';
-    e.innerHTML = SVG.get(t.t, t.v);
-    if (f && i === players[0].length - 1) e.style.marginLeft = '15px';
-    e.onclick = () => {
-      if (!paused && players[0].length % 3 === 2) discard(0, i);
-    };
-    p0.appendChild(e);
-  });
-
-  [1, 2, 3].forEach(pid => {
-    const z = document.getElementById('p' + pid);
-    z.innerHTML = '';
-    players[pid].forEach(() => {
-      const e = document.createElement('div');
-      e.className = 'tile-back ' + (pid % 2 ? 'landscape' : 'portrait');
-      z.appendChild(e);
-    });
-  });
-}
-
-function sortT(a, b) {
-  if (sortMode === 'suit') {
-    if (a.t === b.t) return a.v - b.v;
-    return a.t > b.t ? 1 : -1;
-  } else {
-    if (a.v === b.v) return a.t > b.t ? 1 : -1;
-    return a.v - b.v;
-  }
-}
-
-window.toggleSort = () => {
-  sortMode = (sortMode === 'suit') ? 'num' : 'suit';
-  players[0].sort(sortT);
-  render();
-};
-
-function same(a, b) {
-  return a.t === b.t && a.v === b.v;
-}
-
-function showAct(w, k, p, c) {
-  const b = document.getElementById('action-bar');
-  b.style.display = 'flex';
-  b.children[0].style.display = w ? 'block' : 'none';
-  b.children[1].style.display = k ? 'block' : 'none';
-  b.children[2].style.display = p ? 'block' : 'none';
-  b.children[3].style.display = c ? 'block' : 'none';
-}
-
-function end(t) {
-  document.getElementById('msg').style.display = 'flex';
-  document.getElementById('msg-txt').innerText = t;
-  if (t === 'VICTORY') {
-    App.data.coins += 100;
-    App.save();
-  }
-}
-
-function nav(p) {
-  document.querySelectorAll('.page').forEach(e => e.classList.remove('active'));
-  document.getElementById('page-' + p).classList.add('active');
-  if (p === 'shop') shop();
-}
-
-function shop() {
-  const g = document.getElementById('shop-grid');
-  g.innerHTML = '';
-  for (const k in SKINS) {
-    const s = SKINS[k];
-    const own = App.data.unlocked.includes(k);
-    const d = document.createElement('div');
-    d.className = 'tile';
-    d.style.padding = '10px';
-    d.style.textAlign = 'center';
-    d.innerHTML = `<b>${s.name}</b><br>${own ? 'OWNED' : s.cost}`;
-    d.onclick = () => {
-      if (own) {
-        App.data.skin = k;
-      } else if (App.data.coins >= s.cost) {
-        App.data.coins -= s.cost;
-        App.data.unlocked.push(k);
-        App.data.skin = k;
-      }
-      App.save();
-      shop();
-    };
-    g.appendChild(d);
-  }
-}
-
-function resetData() {
-  localStorage.clear();
-  location.reload();
-}
-
-App.update();
-init();
-</script>
-</body>
-</html>
+  <div id="page-howto" class="page">
+    <h1>How to Play</h1>
+    <h3>Goal of the game</h3>
+    <p>
+      Form a winning hand of 14 tiles made of 4 sets (triplets or sequences) plus 1 pair.  
+      When your hand is complete, press the <b>WIN!</b> button.
+    </p>
+    <h3>Tile types</h3>
+    <ul>
+      <li>Number suits: Dots (●), Bamboo (sticks), and Characters (萬) from 1–9.</li>
+      <li>Honors: Winds (East, South, West, North) and Dragons (Red, Green, White).</li>
+    </ul>
+    <h3>On your turn</h3>
+    <ul>
+      <li>You draw 1 tile automatically at the start of your turn.</li>
+      <li>Click a tile in your hand to discard it to the center area.</li>
+      <li>Your hand always has 13 tiles, and 14 only right after drawing.</li>
+    </ul>
+    <h3>Calls and Kongs</h3>
+    <ul>
+      <li>When an opponent discards a tile, you may get buttons for KONG / PUNG / CHOW.</li>
+      <li>KONG: Four of the same tile (you draw again after declaring a kong).</li>
+      <li>PUNG: Three of the same tile using the discard.</li>
+      <li>CHOW: A simple sequence using the discard (logic here is simplified).</li>
+    </ul>
+    <h3>Winning</h3>
+    <ul>
+      <li>The game checks if your hand can be split into 4 sets plus 1 pair.</li>
+      <li>If so, you can press WIN! to end the round and earn coins.</li>
+    </u
