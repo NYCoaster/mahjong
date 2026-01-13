@@ -3,184 +3,170 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Taiwanese Mahjong - You vs Robots</title>
+    <title>Taiwanese Mahjong</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
-        
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { 
-            font-family: 'Roboto', Arial, sans-serif; 
-            background: linear-gradient(135deg, #2c1810 0%, #1a0f0b 100%);
-            min-height: 100vh; display: flex; flex-direction: column;
+            font-family: Arial, sans-serif; 
+            background: linear-gradient(135deg, #2c1810, #1a0f0b);
+            color: white; min-height: 100vh;
+        }
+        
+        #header {
+            text-align: center; padding: 20px; background: #8B4513;
+            border-bottom: 5px solid #D4AF37;
+        }
+        h1 { font-size: 2em; margin-bottom: 10px; }
+        #coins { font-size: 1.2em; font-weight: bold; color: #FFD700; }
+        
+        #game-container {
+            max-width: 1000px; margin: 0 auto; padding: 20px;
+            display: grid; grid-template-rows: 1fr auto; height: calc(100vh - 140px);
         }
         
         #table {
-            flex: 1; max-width: 1400px; margin: 20px auto; padding: 30px;
-            background: radial-gradient(ellipse at center, #228B22 0%, #006400 70%);
-            border: 40px solid #8B4513; border-radius: 30px;
-            box-shadow: 0 30px 80px rgba(0,0,0,0.8);
+            background: #228B22; border: 20px solid #8B4513;
+            border-radius: 20px; padding: 20px; position: relative;
+            display: grid; grid-template-areas: 
+                "top    top    top"
+                "left   center right"
+                "bottom bottom bottom";
+            gap: 15px; height: 100%;
         }
         
-        #game-area {
-            display: grid; 
-            grid-template-areas: 
-                "north     north     north"
-                "west      center    east "
-                "south     south     south";
-            gap: 20px; height: 700px; padding: 20px;
+        .player.top    { grid-area: top; }
+        .player.right  { grid-area: right; }
+        .player.bottom { grid-area: bottom; }
+        .player.left   { grid-area: left; }
+        #center        { grid-area: center; }
+        
+        .player {
+            background: rgba(139,69,19,0.8); border: 3px solid #D4AF37;
+            border-radius: 12px; padding: 15px; text-align: center;
+        }
+        .player.bottom { background: linear-gradient(#D4AF37, #8B4513); min-height: 180px; }
+        
+        .name { font-weight: bold; margin-bottom: 10px; font-size: 1.1em; }
+        .bottom .name { color: #000; }
+        .robot .name { color: #FF6B6B; }
+        
+        .hand {
+            display: flex; flex-wrap: wrap; justify-content: center; gap: 5px;
+            min-height: 70px; padding: 10px;
         }
         
-        .player.north { grid-area: north; }
-        .player.east  { grid-area: east; }
-        .player.south { grid-area: south; }
-        .player.west  { grid-area: west; }
-        #center      { grid-area: center; }
-        
-        .player { 
-            background: rgba(139,69,19,0.9); border: 4px solid #D4AF37; 
-            border-radius: 20px; padding: 20px; text-align: center;
-            box-shadow: 0 15px 40px rgba(0,0,0,0.6);
-        }
-        
-        /* YOU - BOTTOM (big visible hand) */
-        .player.south { 
-            background: linear-gradient(145deg, rgba(212,175,55,0.9), rgba(139,69,19,0.9));
-            border-color: #FFD700; min-height: 250px;
-        }
-        .player.south .name { color: #FFD700; font-size: 28px; font-weight: bold; }
-        .player.south .hand { justify-content: center; gap: 8px; }
-        
-        /* ROBOTS - HIDDEN HANDS (back sides only) */
-        .player.north .name, .player.east .name, .player.west .name { 
-            color: #FF6B6B; font-weight: bold; font-size: 22px; margin-bottom: 10px;
-        }
-        
-        .hand { 
-            display: flex; gap: 4px; justify-content: center; flex-wrap: wrap; 
-            min-height: 100px; margin: 10px 0; padding: 15px;
-            background: rgba(255,255,255,0.1); border-radius: 12px;
-        }
-        
-        /* YOUR TILES - VISIBLE */
         .tile {
-            width: 42px; height: 58px; 
-            background: linear-gradient(145deg, #F5DEB3, #D2B48C);
-            border: 3px solid #8B4513; border-radius: 6px; 
-            display: flex; align-items: center; justify-content: center; 
-            font-size: 26px; cursor: pointer; position: relative;
-            box-shadow: 0 6px 16px rgba(0,0,0,0.4); transition: all 0.3s;
+            width: 35px; height: 50px; background: linear-gradient(#F5DEB3, #D2B48C);
+            border: 2px solid #8B4513; border-radius: 4px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 22px; cursor: pointer; box-shadow: 0 3px 10px rgba(0,0,0,0.4);
+            transition: all 0.2s;
         }
-        
-        /* ROBOT TILES - HIDDEN BACKS */
         .tile.back {
-            background: linear-gradient(145deg, #654321, #8B4513) !important;
+            background: linear-gradient(#654321, #8B4513) !important;
             color: transparent !important;
-            font-size: 20px !important;
         }
-        .tile.back::after {
-            content: '🀄'; opacity: 0.4; font-size: 18px;
-        }
+        .tile.back::after { content: '🀄'; opacity: 0.5; }
+        .tile:hover:not(.back) { transform: translateY(-2px); }
+        .tile.selected { border-color: #FF0 !important; transform: scale(1.1); }
+        .tile.discard { background: #DDD; transform: rotate(5deg); }
         
-        .tile:hover:not(.back) { 
-            transform: translateY(-4px) scale(1.05); 
-            box-shadow: 0 10px 25px rgba(0,0,0,0.6); 
+        #center {
+            background: rgba(0,100,0,0.7); border: 3px solid #D4AF37;
+            border-radius: 12px; padding: 20px; text-align: center;
         }
-        .tile.selected { 
-            border-color: #FFD700 !important; 
-            box-shadow: 0 0 25px #FFD700 !important; 
-            transform: scale(1.15) !important; 
-            z-index: 10;
-        }
-        .tile.discard { 
-            background: linear-gradient(145deg, #E0E0E0, #B0B0B0); 
-            transform: rotate(10deg); margin: 2px; 
-        }
+        #status { font-size: 1.3em; margin-bottom: 15px; }
+        #discard-pile { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
         
-        #center { 
-            background: rgba(0,100,0,0.8); border: 4px solid #D4AF37; 
-            border-radius: 20px; display: flex; flex-direction: column; 
-            align-items: center; padding: 25px; color: white; 
-            font-size: 20px; text-shadow: 2px 2px 4px black;
+        #controls {
+            display: flex; gap: 10px; justify-content: center; padding: 20px;
+            background: #333; border-top: 3px solid #D4AF37;
         }
-        #discard-pile { 
-            display: flex; flex-wrap: wrap; gap: 12px; 
-            justify-content: center; max-width: 450px; margin: 20px 0;
+        button {
+            padding: 12px 20px; border: 2px solid #D4AF37; background: #8B4513;
+            color: white; border-radius: 6px; cursor: pointer; font-weight: bold;
         }
-        
-        #controls { 
-            background: rgba(0,0,0,0.9); padding: 25px; text-align: center; 
-            color: white; border-top: 5px solid #D4AF37;
-        }
-        button { 
-            padding: 15px 30px; margin: 8px; border: 3px solid #D4AF37; 
-            background: linear-gradient(145deg, #8B4513, #A0522D); color: white; 
-            border-radius: 12px; cursor: pointer; font-weight: bold; font-size: 16px;
-            box-shadow: 0 8px 25px rgba(0,0,0,0.5);
-        }
-        button:hover:not(:disabled) { 
-            background: linear-gradient(145deg, #A0522D, #D2691E); 
-            transform: translateY(-3px); 
-        }
+        button:hover:not(:disabled) { background: #A0522D; }
         button:disabled { opacity: 0.5; cursor: not-allowed; }
         
+        #shop {
+            position: fixed; top: 20px; right: 20px; background: rgba(0,0,0,0.9);
+            border: 3px solid #D4AF37; border-radius: 12px; padding: 20px;
+            max-width: 300px; z-index: 100;
+        }
+        #shop h3 { margin-bottom: 15px; color: #FFD700; }
+        .shop-item { display: flex; justify-content: space-between; margin: 10px 0; padding: 10px; background: #444; border-radius: 6px; }
+        .shop-item button { padding: 8px 15px; font-size: 14px; }
+        
         @media (max-width: 768px) {
-            #game-area { 
-                grid-template-areas: 
-                    "north" 
-                    "center" 
-                    "south" 
-                    "west east"; 
-                gap: 10px; 
-            }
-            .tile { width: 36px; height: 50px; font-size: 22px; }
-            .tile.back::after { font-size: 16px; }
+            #game-container { padding: 10px; }
+            .tile { width: 30px; height: 42px; font-size: 18px; }
         }
     </style>
 </head>
 <body>
-    <div id="table">
-        <div id="game-area">
-            <!-- NORTH Robot - HIDDEN HAND -->
-            <div class="player north">
-                <div class="name">🤖 NORTH ROBOT</div>
+    <!-- SHOP -->
+    <div id="shop">
+        <h3>🛒 Mahjong Shop</h3>
+        <div class="shop-item">
+            <span>🎨 Tile Theme 1</span>
+            <button onclick="buyItem(1)">50 coins</button>
+        </div>
+        <div class="shop-item">
+            <span>⭐ Golden Tiles</span>
+            <button onclick="buyItem(2)">100 coins</button>
+        </div>
+        <div class="shop-item">
+            <span>⚡ Fast Robots</span>
+            <button onclick="buyItem(3)">75 coins</button>
+        </div>
+        <div style="margin-top: 15px; font-size: 0.9em;">
+            Earn 10 coins per round won!
+        </div>
+    </div>
+    
+    <!-- GAME -->
+    <div id="header">
+        <h1>🀄 Taiwanese Mahjong</h1>
+        <div id="coins">💰 100 coins</div>
+    </div>
+    
+    <div id="game-container">
+        <div id="table">
+            <div class="player top robot">
+                <div class="name">🤖 NORTH</div>
                 <div class="hand" id="hand-north"></div>
             </div>
             
-            <!-- EAST Robot - HIDDEN HAND -->
-            <div class="player east">
-                <div class="name">🤖 EAST ROBOT</div>
+            <div class="player right robot">
+                <div class="name">🤖 EAST</div>
                 <div class="hand" id="hand-east"></div>
             </div>
             
-            <!-- YOU (BOTTOM) - VISIBLE HAND -->
-            <div class="player south">
-                <div class="name">🧑 YOU (South Dealer)</div>
+            <div class="player bottom">
+                <div class="name">🧑 YOU</div>
                 <div class="hand" id="hand-south"></div>
             </div>
             
-            <!-- WEST Robot - HIDDEN HAND -->
-            <div class="player west">
-                <div class="name">🤖 WEST ROBOT</div>
+            <div class="player left robot">
+                <div class="name">🤖 WEST</div>
                 <div class="hand" id="hand-west"></div>
             </div>
             
-            <!-- CENTER -->
             <div id="center">
-                <div id="status" style="font-size: 24px; margin-bottom: 20px;">Dealing tiles...</div>
+                <div id="status">Starting Round 1...</div>
                 <div id="discard-pile"></div>
-                <div style="margin-top: 20px;">
-                    <span>Round: <span id="round">1</span></span> | 
-                    <span style="margin-left: 20px;">Score: <span id="score">0</span></span> | 
-                    <span style="margin-left: 20px;">Wall: <span id="tilesLeft">144</span></span>
+                <div style="margin-top: 10px; font-size: 0.9em;">
+                    Round: <span id="round">1</span> | Tiles left: <span id="tilesLeft">144</span>
                 </div>
             </div>
         </div>
     </div>
     
     <div id="controls">
-        <button onclick="discardSelected()" id="discardBtn">🗑️ Discard Selected</button>
-        <button onclick="sortHand()">🔤 Sort Hand</button>
-        <button onclick="newRound()">🔄 New Round</button>
+        <button onclick="discardSelected()" id="discardBtn" disabled>🗑️ Discard</button>
+        <button onclick="sortHand()">Sort</button>
+        <button onclick="newRound()">New Round</button>
     </div>
 
     <script>
@@ -193,7 +179,7 @@
         let game = {
             wall: [], players: {south: [], east: [], north: [], west: []},
             discardPile: [], currentPlayer: 'south', selectedTile: null,
-            round: 1, score: 0, tilesLeft: 144
+            round: 1, coins: 100, tilesLeft: 144
         };
         
         function createTileDeck() {
@@ -220,9 +206,7 @@
             game.discardPile = [];
             game.tilesLeft = 144;
             game.selectedTile = null;
-            game.round++;
             
-            // Deal 16 tiles each (Taiwanese Mahjong)
             ['south', 'east', 'north', 'west'].forEach(player => {
                 for (let i = 0; i < 16; i++) {
                     game.players[player].push(game.wall.pop());
@@ -231,8 +215,9 @@
             game.tilesLeft -= 64;
             
             renderAll();
-            updateStatus('🧑 Your turn! Select a tile to discard.');
+            updateStatus('🧑 Your turn! Select a tile.');
             document.getElementById('discardBtn').disabled = false;
+            updateCoins();
         }
         
         function renderAll() {
@@ -245,17 +230,14 @@
             ['south', 'east', 'north', 'west'].forEach(player => {
                 const handEl = document.getElementById(`hand-${player}`);
                 handEl.innerHTML = '';
-                
                 game.players[player].forEach((tile, i) => {
                     const tileEl = document.createElement('div');
                     if (player === 'south') {
-                        // YOUR HAND - VISIBLE
                         tileEl.className = 'tile';
                         tileEl.textContent = tile;
                         tileEl.onclick = () => selectTile(i);
                         if (game.selectedTile === i) tileEl.classList.add('selected');
                     } else {
-                        // ROBOT HANDS - HIDDEN BACKS
                         tileEl.className = 'tile back';
                     }
                     handEl.appendChild(tileEl);
@@ -266,7 +248,7 @@
         function renderDiscardPile() {
             const pileEl = document.getElementById('discard-pile');
             pileEl.innerHTML = '';
-            game.discardPile.slice(-12).reverse().forEach(tile => {
+            game.discardPile.slice(-8).reverse().forEach(tile => {
                 const tileEl = document.createElement('div');
                 tileEl.className = 'tile discard';
                 tileEl.textContent = tile;
@@ -275,16 +257,12 @@
         }
         
         function selectTile(index) {
-            if (game.currentPlayer !== 'south') return;
             game.selectedTile = game.selectedTile === index ? null : index;
             renderHands();
         }
         
         function discardSelected() {
-            if (game.selectedTile === null) {
-                alert('Please select a tile first!');
-                return;
-            }
+            if (game.selectedTile === null) return alert('Select a tile!');
             
             const tile = game.players.south.splice(game.selectedTile, 1)[0];
             game.discardPile.push(tile);
@@ -292,54 +270,43 @@
             game.tilesLeft--;
             
             renderAll();
-            updateStatus('🤖 Robots thinking...');
+            updateStatus('🤖 Robots playing...');
             document.getElementById('discardBtn').disabled = true;
             
-            // Robot round
-            setTimeout(() => {
-                robotRound();
-            }, 1200);
+            setTimeout(robotRound, 1000);
         }
         
         function robotRound() {
-            const robotOrder = ['east', 'north', 'west'];
-            let robotIndex = 0;
-            
-            function robotTurn() {
-                if (robotIndex >= robotOrder.length || game.tilesLeft <= 0) {
+            const robots = ['east', 'north', 'west'];
+            let i = 0;
+            function nextRobot() {
+                if (i >= robots.length) {
                     updateStatus('🧑 Your turn!');
                     document.getElementById('discardBtn').disabled = false;
                     return;
                 }
-                
-                const player = robotOrder[robotIndex];
-                // Robot draws and discards randomly
-                if (game.wall.length > 0) {
-                    const drawn = game.wall.pop();
-                    game.players[player].push(drawn);
-                }
-                
+                const player = robots[i++];
+                if (game.wall.length > 0) game.players[player].push(game.wall.pop());
                 if (game.players[player].length > 0) {
-                    const discardIndex = Math.floor(Math.random() * game.players[player].length);
-                    const tile = game.players[player].splice(discardIndex, 1)[0];
-                    game.discardPile.push(tile);
-                    game.tilesLeft--;
+                    const idx = Math.floor(Math.random() * game.players[player].length);
+                    game.discardPile.push(game.players[player].splice(idx, 1)[0]);
                 }
-                
+                game.tilesLeft--;
                 renderAll();
-                updateStatus(`🤖 ${player.toUpperCase()} discards...`);
-                
-                robotIndex++;
-                setTimeout(robotTurn, 800);
+                setTimeout(() => nextRobot(), 600);
             }
-            
-            robotTurn();
+            nextRobot();
         }
         
         function sortHand() {
-            if (game.currentPlayer !== 'south') return;
             game.players.south.sort();
             renderHands();
+        }
+        
+        function newRound() {
+            game.round = 1; // FIXED: Start at Round 1
+            game.coins += 10; // Earn coins
+            deal();
         }
         
         function updateStatus(msg) {
@@ -348,18 +315,27 @@
         
         function updateUI() {
             document.getElementById('round').textContent = game.round;
-            document.getElementById('score').textContent = game.score;
             document.getElementById('tilesLeft').textContent = game.tilesLeft;
         }
         
-        function newRound() {
-            deal();
+        function updateCoins() {
+            document.getElementById('coins').textContent = `💰 ${game.coins} coins`;
         }
         
-        // Initialize game
+        function buyItem(id) {
+            const prices = [50, 100, 75];
+            if (game.coins >= prices[id-1]) {
+                game.coins -= prices[id-1];
+                updateCoins();
+                alert(`Purchased item ${id}! (Demo)`);
+            } else {
+                alert('Not enough coins!');
+            }
+        }
+        
+        // Initialize
         document.getElementById('discardBtn').onclick = discardSelected;
         deal();
     </script>
 </body>
 </html>
-
