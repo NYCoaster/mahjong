@@ -3,143 +3,131 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Taiwanese Mahjong Solitaire vs 🤖 Robot</title>
+    <title>Taiwanese Mahjong (真人對戰)</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
         
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { 
             font-family: 'Roboto', Arial, sans-serif; 
-            min-height: 100vh; overflow-x: hidden; 
-            background: linear-gradient(135deg, #2c1810 0%, #1a0f0b 50%, #3d2b1f 100%);
-            position: relative;
+            background: linear-gradient(135deg, #2c1810 0%, #1a0f0b 100%);
+            min-height: 100vh; display: flex; flex-direction: column;
         }
         
-        /* Mahjong Table Background */
-        #table-bg {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1;
-            background: 
-                radial-gradient(ellipse at center, rgba(139,69,19,0.3) 0%, transparent 70%),
-                repeating-linear-gradient(90deg, transparent, transparent 49px, rgba(0,0,0,0.1) 50px, rgba(0,0,0,0.1) 51px, transparent 52px);
-        }
-        #table-felt {
-            position: absolute; top: 50%; left: 50%; width: 80%; height: 60%; 
-            transform: translate(-50%, -50%); background: radial-gradient(ellipse, #228B22 0%, #006400 70%);
-            border: 40px solid #8B4513; border-radius: 20px; box-shadow: inset 0 0 50px rgba(0,0,0,0.5);
+        #table {
+            flex: 1; max-width: 1200px; margin: 20px auto; padding: 20px;
+            background: radial-gradient(ellipse at center, #228B22 0%, #006400 70%);
+            border: 30px solid #8B4513; border-radius: 25px; position: relative;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.8), inset 0 0 50px rgba(0,0,0,0.3);
         }
         
-        #game-container { display: flex; flex-direction: column; align-items: center; padding: 20px; min-height: 100vh; position: relative; z-index: 1; }
+        #players {
+            display: grid; grid-template-areas: "east south west north"; gap: 20px;
+            height: 500px; padding: 20px; position: relative;
+        }
+        .player.east   { grid-area: east; justify-self: end; }
+        .player.south  { grid-area: south; justify-self: center; }
+        .player.west   { grid-area: west; justify-self: start; }
+        .player.north  { grid-area: north; justify-self: center; align-self: start; }
         
-        #ui { text-align: center; color: #fff; margin: 20px; text-shadow: 2px 2px 4px rgba(0,0,0,0.8); background: rgba(0,0,0,0.7); padding: 25px; border-radius: 15px; border: 3px solid #D4AF37; }
-        h1 { font-size: 2.5em; margin-bottom: 10px; background: linear-gradient(45deg, #D4AF37, #FFD700); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
-        #status { font-size: 18px; margin: 10px 0; }
-        button { padding: 12px 24px; font-size: 16px; margin: 5px; border: 2px solid #D4AF37; border-radius: 8px; background: linear-gradient(145deg, #8B4513, #A0522D); color: white; cursor: pointer; font-weight: bold; box-shadow: 0 4px 15px rgba(0,0,0,0.5); transition: all 0.3s; }
-        button:hover { background: linear-gradient(145deg, #A0522D, #D2691E); transform: translateY(-2px); }
+        .player { 
+            background: rgba(139,69,19,0.9); border: 3px solid #D4AF37; 
+            border-radius: 15px; padding: 15px; min-width: 200px; text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        .player.east, .player.west { writing-mode: vertical-rl; }
+        .player.north { transform: rotate(180deg); }
         
-        #game { 
-            display: grid; grid-template-columns: repeat(20, 1fr); gap: 4px; 
-            max-width: 1000px; margin: 20px auto; padding: 30px; 
-            background: linear-gradient(145deg, #654321, #8B4513); border: 8px solid #D4AF37;
-            border-radius: 20px; box-shadow: 0 20px 40px rgba(0,0,0,0.7), inset 0 0 30px rgba(255,255,255,0.1);
-            position: relative;
+        .hand { display: flex; gap: 4px; justify-content: center; flex-wrap: wrap; min-height: 80px; }
+        .tile {
+            width: 32px; height: 48px; background: linear-gradient(145deg, #F5DEB3, #D2B48C);
+            border: 2px solid #8B4513; border-radius: 4px; display: flex; align-items: center;
+            justify-content: center; font-size: 20px; cursor: pointer; position: relative;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4); transition: all 0.2s;
         }
-        #game::before {
-            content: ''; position: absolute; top: -10px; left: 50%; transform: translateX(-50%);
-            width: 60px; height: 60px; background: radial-gradient(circle, #FFD700, #D4AF37); border-radius: 50%;
-            box-shadow: 0 0 20px rgba(255,215,0,0.5);
-        }
+        .tile:hover { transform: translateY(-3px); box-shadow: 0 6px 20px rgba(0,0,0,0.6); }
+        .tile.discard { background: linear-gradient(145deg, #E0E0E0, #B0B0B0); transform: rotate(5deg); }
+        .tile.meld { border-color: #FFD700; box-shadow: 0 0 15px rgba(255,215,0,0.5); }
+        .tile.win { animation: winPulse 0.5s infinite; border-color: #FF4500; }
+        @keyframes winPulse { 0%, 100% { box-shadow: 0 0 20px #FF4500; } 50% { box-shadow: 0 0 40px #FF4500; } }
         
-        .tile { 
-            aspect-ratio: 1; 
-            background: linear-gradient(145deg, #F5DEB3 0%, #D2B48C 50%, #DEB887 100%); 
-            border: 4px solid #8B4513; border-radius: 6px; 
-            display: flex; align-items: center; justify-content: center; 
-            font-size: 28px; font-weight: bold; cursor: pointer; 
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
-            position: relative; box-shadow: 
-                0 8px 20px rgba(0,0,0,0.4), 
-                inset 0 2px 4px rgba(255,255,255,0.3),
-                inset 0 -2px 4px rgba(0,0,0,0.2);
-            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
-            min-height: 50px;
-        }
-        .tile::before { 
-            content: attr(data-pips); position: absolute; top: 4px; font-size: 14px; 
-            color: #8B4513; font-weight: normal; text-shadow: none;
-        }
-        .tile:hover { transform: translateY(-4px); box-shadow: 0 12px 30px rgba(0,0,0,0.6); }
-        .tile.robot-selected { 
-            border-color: #FF4500 !important; 
-            box-shadow: 0 0 40px rgba(255,69,0,0.9), inset 0 0 20px rgba(255,69,0,0.3) !important; 
-            animation: robot-glow 0.8s infinite alternate; 
-        }
-        @keyframes robot-glow { 0% { box-shadow: 0 0 30px rgba(255,69,0,0.7); } 100% { box-shadow: 0 0 50px rgba(255,69,0,1); } }
-        .tile.matched { visibility: hidden; animation: explode 0.6s; }
-        .tile.open { border-color: #32CD32; transform: scale(1.1) translateY(-10px); box-shadow: 0 15px 40px rgba(50,205,50,0.7); }
-        .tile.disabled { opacity: 0.3; cursor: not-allowed; }
-        .tile.empty { background: rgba(139,69,19,0.3); border-color: rgba(139,69,19,0.5); cursor: default; opacity: 0.1; }
-        @keyframes explode { to { transform: scale(0) rotate(360deg); opacity: 0; } }
+        #center { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; color: white; }
+        #discard-pile { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; max-width: 300px; }
         
-        @media (max-width: 768px) { #game { grid-template-columns: repeat(18, 1fr); gap: 3px; padding: 20px; } .tile { font-size: 24px; min-height: 40px; } }
-        @media (max-width: 480px) { #game { grid-template-columns: repeat(16, 1fr); } .tile { font-size: 20px; } }
+        #controls { background: rgba(0,0,0,0.8); padding: 20px; text-align: center; color: white; }
+        button { padding: 12px 24px; margin: 5px; border: 2px solid #D4AF37; background: #8B4513; color: white; border-radius: 8px; cursor: pointer; font-weight: bold; }
+        button:hover { background: #A0522D; }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
+        
+        @media (max-width: 768px) {
+            #players { grid-template-areas: "east" "south" "west" "north"; height: auto; }
+            .player.east, .player.west { writing-mode: horizontal-tb; }
+            .player.north { transform: none; }
+            .tile { width: 28px; height: 42px; font-size: 18px; }
+        }
     </style>
 </head>
 <body>
-    <div id="table-bg">
-        <div id="table-felt"></div>
+    <div id="table">
+        <div id="players">
+            <div class="player east" id="player-east">
+                <div style="font-weight: bold; color: #FFD700;">🧑 YOU (East)</div>
+                <div class="hand" id="hand-east"></div>
+                <div id="melds-east"></div>
+            </div>
+            <div class="player south" id="player-south">
+                <div style="font-weight: bold; color: #FF6B6B;">🤖 South</div>
+                <div class="hand" id="hand-south"></div>
+                <div id="melds-south"></div>
+            </div>
+            <div class="player west" id="player-west">
+                <div style="font-weight: bold; color: #4ECDC4;">🤖 West</div>
+                <div class="hand" id="hand-west"></div>
+                <div id="melds-west"></div>
+            </div>
+            <div class="player north" id="player-north">
+                <div style="font-weight: bold; color: #FFE66D;">🤖 North</div>
+                <div class="hand" id="hand-north"></div>
+                <div id="melds-north"></div>
+            </div>
+        </div>
+        <div id="center">
+            <div id="status">Deal starting...</div>
+            <div id="discard-pile"></div>
+        </div>
     </div>
     
-    <div id="game-container">
-        <div id="ui">
-            <h1>🀄 Taiwanese Mahjong vs 🤖 Robot</h1>
-            <div id="status">Loading tiles...</div>
-            <div id="moves">Moves: <span id="playerMoves">0</span> | Robot: <span id="robotMoves">0</span></div>
-            <button id="robotToggle">🚫 Disable Robot</button>
-            <button onclick="newGame()">🔄 New Game</button>
-            <button onclick="hint()">💡 Hint</button>
-        </div>
-        <div id="game"></div>
+    <div id="controls">
+        <button onclick="discardSelected()">🗑️ Discard Selected</button>
+        <button onclick="sortHand()">🔤 Sort Hand</button>
+        <button onclick="newRound()">🔄 New Round</button>
+        <div id="score">Score: 0 points</div>
     </div>
 
     <script>
-        // Taiwanese Mahjong tiles (1-9 Wan, Tong, Tiao)
-        const taiwaneseTiles = ['🀇','🀈','🀉','🀊','🀋','🀌','🀍','🀎','🀏','🀙','🀚','🀛','🀜','🀝','🀞','🀟','🀠','🀡','🀐','🀑','🀒','🀓','🀔','🀕','🀖','🀗','🀘'];
-        let board = [], openTiles = [], playerMoves = 0, robotMoves = 0, robotEnabled = true, robotTurn = false;
+        // Taiwanese Mahjong tiles (no flowers, 16-tile hands)
+        const suits = {
+            wan: ['🀇','🀈','🀉','🀊','🀋','🀌','🀍','🀎','🀏'],
+            tong: ['🀙','🀚','🀛','🀜','🀝','🀞','🀟','🀠','🀡'],
+            tiao: ['🀐','🀑','🀒','🀓','🀔','🀕','🀖','🀗','🀘']
+        };
         
-        function initBoard() {
-            document.getElementById('status').textContent = 'Generating pyramid...';
-            
-            // Classic Taiwanese pyramid (144 tiles total)
-            const pyramidRows = 8;
-            const cols = 20;
-            let tileCount = 0;
-            
-            // Create exactly 144 tiles
-            let tileDeck = [];
-            for (let i = 0; i < 4; i++) { // 4 complete sets
-                tileDeck.push(...taiwaneseTiles);
-            }
-            tileDeck = shuffle(tileDeck.slice(0, 144)); // Exactly 144 tiles
-            
-            // Build pyramid layout
-            board = [];
-            for (let row = 0; row < pyramidRows; row++) {
-                let rowTiles = [];
-                let tilesInRow = Math.min(8 + row * 2, cols);
-                let startCol = Math.floor((cols - tilesInRow) / 2);
-                
-                for (let col = 0; col < cols; col++) {
-                    if (col >= startCol && col < startCol + tilesInRow && tileCount < 144) {
-                        rowTiles.push(tileDeck[tileCount++]);
-                    } else {
-                        rowTiles.push(null);
-                    }
+        let game = {
+            wall: [], players: {east: [], south: [], west: [], north: []},
+            melds: {east: [], south: [], west: [], north: []},
+            discardPile: [], currentPlayer: 'east', dealer: 'east',
+            selectedTile: null, playerScore: 0, round: 1
+        };
+        
+        function createTileDeck() {
+            let deck = [];
+            // 4 sets of each tile (no flowers in Taiwanese)
+            for (let suit in suits) {
+                for (let tile of suits[suit]) {
+                    for (let i = 0; i < 4; i++) deck.push(tile);
                 }
-                board.push(rowTiles);
             }
-            
-            document.getElementById('status').textContent = 'Ready! Your turn.';
-            renderBoard();
+            return shuffle(deck);
         }
         
         function shuffle(array) {
@@ -150,187 +138,183 @@
             return array;
         }
         
-        function renderBoard() {
-            const gameEl = document.getElementById('game');
-            gameEl.innerHTML = '';
+        function deal() {
+            game.wall = createTileDeck();
+            game.players = {east: [], south: [], west: [], north: []};
+            game.melds = {east: [], south: [], west: [], north: []};
+            game.discardPile = [];
             
-            board.forEach((row, y) => {
-                row.forEach((tile, x) => {
+            // Deal 16 tiles each (Taiwanese rules)
+            ['east', 'south', 'west', 'north'].forEach((player, i) => {
+                for (let j = 0; j < 16; j++) {
+                    game.players[player].push(game.wall.pop());
+                }
+            });
+            
+            renderHands();
+            updateStatus(`Round ${game.round} - Your turn (East Dealer)`);
+            game.currentPlayer = 'east';
+        }
+        
+        function renderHands() {
+            ['east', 'south', 'west', 'north'].forEach(player => {
+                renderHand(player);
+                renderMelds(player);
+            });
+            renderDiscardPile();
+        }
+        
+        function renderHand(player) {
+            const handEl = document.getElementById(`hand-${player}`);
+            handEl.innerHTML = '';
+            
+            game.players[player].forEach((tile, i) => {
+                const tileEl = document.createElement('div');
+                tileEl.className = 'tile';
+                tileEl.textContent = tile;
+                tileEl.onclick = () => selectTile(player, i);
+                if (player === 'east' && game.selectedTile === i) {
+                    tileEl.style.borderColor = '#FFD700';
+                    tileEl.style.transform = 'scale(1.1)';
+                }
+                handEl.appendChild(tileEl);
+            });
+        }
+        
+        function renderMelds(player) {
+            const meldsEl = document.getElementById(`melds-${player}`);
+            meldsEl.innerHTML = '';
+            game.melds[player].forEach(meld => {
+                meld.forEach(tile => {
                     const tileEl = document.createElement('div');
-                    if (tile) {
-                        tileEl.className = 'tile';
-                        tileEl.textContent = tile;
-                        tileEl.dataset.pips = getPips(tile);
-                        tileEl.onclick = () => selectTile(x, y, false);
-                    } else {
-                        tileEl.className = 'tile empty';
-                    }
-                    gameEl.appendChild(tileEl);
+                    tileEl.className = 'tile meld';
+                    tileEl.textContent = tile;
+                    meldsEl.appendChild(tileEl);
                 });
             });
-            updateDisabled();
         }
         
-        function getPips(tile) {
-            const pips = {
-                '🀇':'1','🀈':'2','🀉':'3','🀊':'4','🀋':'5','🀌':'6','🀍':'7','🀎':'8','🀏':'9', // Wan
-                '🀙':'1','🀚':'2','🀛':'3','🀜':'4','🀝':'5','🀞':'6','🀟':'7','🀠':'8','🀡':'9', // Tong
-                '🀐':'1','🀑':'2','🀒':'3','🀓':'4','🀔':'5','🀕':'6','🀖':'7','🀗':'8','🀘':'9'  // Tiao
-            };
-            return pips[tile] || '';
+        function renderDiscardPile() {
+            const pileEl = document.getElementById('discard-pile');
+            pileEl.innerHTML = '';
+            game.discardPile.slice(-8).forEach(tile => {
+                const tileEl = document.createElement('div');
+                tileEl.className = 'tile discard';
+                tileEl.textContent = tile;
+                pileEl.appendChild(tileEl);
+            });
         }
         
-        function selectTile(x, y, isRobot = false) {
-            if (!board[y] || !board[y][x] || openTiles.some(([ox, oy]) => ox === x && oy === y) || !isFree(x, y)) return;
+        function selectTile(player, index) {
+            if (player !== 'east' || game.currentPlayer !== 'east') return;
             
-            const tile = board[y][x];
-            const tileIndex = y * 20 + x;
-            const tileEl = document.querySelectorAll('.tile')[tileIndex];
+            game.selectedTile = game.selectedTile === index ? null : index;
+            renderHands();
+        }
+        
+        function discardSelected() {
+            if (game.selectedTile === null || game.currentPlayer !== 'east') return;
             
-            openTiles.push([x, y]);
-            tileEl.classList.add('open');
+            const tile = game.players.east.splice(game.selectedTile, 1)[0];
+            game.discardPile.push(tile);
+            game.selectedTile = null;
             
-            if (isRobot) {
-                tileEl.classList.add('robot-selected');
-                robotMoves++;
+            renderHands();
+            renderDiscardPile();
+            
+            // Check if any robot can claim (Pung/Chow)
+            if (!robotTurn()) {
+                nextPlayer();
+            }
+        }
+        
+        function nextPlayer() {
+            const order = ['east', 'south', 'west', 'north'];
+            const currentIdx = order.indexOf(game.currentPlayer);
+            game.currentPlayer = order[(currentIdx + 1) % 4];
+            
+            if (game.currentPlayer !== 'east') {
+                setTimeout(() => robotTurn(), 800);
             } else {
-                playerMoves++;
+                updateStatus('Your turn!');
             }
+        }
+        
+        function robotTurn() {
+            if (game.wall.length === 0) return endRound();
             
-            updateUI();
+            // Draw tile
+            const drawn = game.wall.pop();
+            game.players[game.currentPlayer].push(drawn);
             
-            if (openTiles.length === 2) {
-                const [[x1, y1]] = openTiles;
-                if (board[y1][x1] !== tile) {
-                    setTimeout(() => closeMismatch(), 800);
-                } else {
-                    setTimeout(() => matchSuccess(x, y, x1, y1), 800);
+            // Simple robot AI: look for Pung or discard randomly
+            const hand = game.players[game.currentPlayer];
+            let discardIdx = hand.length - 1; // Default to drawn tile
+            
+            // Check for Pung
+            for (let i = 0; i < hand.length; i++) {
+                let count = hand.filter(t => t === hand[i]).length;
+                if (count >= 3) {
+                    discardIdx = i;
+                    break;
                 }
             }
-            updateDisabled();
-        }
-        
-        function robotMove() {
-            if (!robotEnabled || openTiles.length > 0) return;
             
-            for (let y1 = 0; y1 < board.length; y1++) {
-                for (let x1 = 0; x1 < 20; x1++) {
-                    if (board[y1][x1] && isFree(x1, y1)) {
-                        for (let y2 = 0; y2 < board.length; y2++) {
-                            for (let x2 = 0; x2 < 20; x2++) {
-                                if ((x2 !== x1 || y2 !== y1) && board[y2][x2] === board[y1][x1] && isFree(x2, y2)) {
-                                    robotTurn = true;
-                                    selectTile(x1, y1, true);
-                                    setTimeout(() => {
-                                        if (openTiles.length === 1) {
-                                            selectTile(x2, y2, true);
-                                        }
-                                    }, 400);
-                                    return;
-                                }
-                            }
-                        }
-                    }
-                }
+            // Discard
+            const tile = hand.splice(discardIdx, 1)[0];
+            game.discardPile.push(tile);
+            
+            renderHands();
+            renderDiscardPile();
+            updateStatus(`${game.currentPlayer.toUpperCase()} discards`);
+            
+            if (!checkPlayerWin(tile)) {
+                setTimeout(() => nextPlayer(), 1000);
             }
         }
         
-        function closeMismatch() {
-            openTiles.forEach(([x, y]) => {
-                const tileEl = document.querySelectorAll('.tile')[y * 20 + x];
-                tileEl.classList.remove('open', 'robot-selected');
-            });
-            openTiles = [];
-            robotTurn = false;
-            updateDisabled();
-            if (robotEnabled) setTimeout(robotMove, 800);
-        }
-        
-        function matchSuccess(x2, y2, x1, y1) {
-            board[y1][x1] = null;
-            board[y2][x2] = null;
-            document.querySelectorAll('.tile')[y1 * 20 + x1].classList.add('matched');
-            document.querySelectorAll('.tile')[y2 * 20 + x2].classList.add('matched');
-            openTiles = [];
-            robotTurn = false;
-            checkWin();
-            updateDisabled();
-            if (robotEnabled) setTimeout(robotMove, 1200);
-        }
-        
-        function isFree(x, y) {
-            if (!board[y] || !board[y][x]) return false;
-            const leftFree = x === 0 || !board[y][x-1];
-            const rightFree = x === 19 || !board[y][x+1];
-            const topFree = y === 0 || !board[y-1][x];
-            return (leftFree || rightFree) && topFree;
-        }
-        
-        function updateDisabled() {
-            document.querySelectorAll('.tile').forEach((el, i) => {
-                const x = i % 20;
-                const y = Math.floor(i / 20);
-                if (board[y]?.[x] && !el.classList.contains('open') && !el.classList.contains('matched')) {
-                    el.classList.toggle('disabled', !isFree(x, y));
+        function checkPlayerWin(tile) {
+            // Simple win check - 4 melds + pair
+            ['south', 'west', 'north'].forEach(player => {
+                if (hasMahjong(game.players[player])) {
+                    updateStatus(`${player.toUpperCase()} wins!`);
+                    endRound();
+                    return true;
                 }
             });
+            return false;
         }
         
-        function updateUI() {
-            document.getElementById('playerMoves').textContent = playerMoves;
-            document.getElementById('robotMoves').textContent = robotMoves;
-            document.getElementById('status').textContent = robotTurn ? '🤖 Robot thinking...' : '👤 Your turn';
+        function hasMahjong(hand) {
+            // Simplified Mahjong check (4 melds + pair)
+            if (hand.length !== 14) return false;
+            // Basic pattern matching (in real game, much more complex)
+            return Math.random() < 0.1; // 10% chance for demo
         }
         
-        function checkWin() {
-            const tilesLeft = board.flat().filter(t => t).length;
-            if (tilesLeft === 0) {
-                setTimeout(() => {
-                    alert(`🎉 Victory!\nYou: ${playerMoves} moves | Robot: ${robotMoves} moves`);
-                }, 500);
-            }
+        function sortHand() {
+            if (game.currentPlayer !== 'east') return;
+            game.players.east.sort();
+            renderHands();
         }
         
-        function toggleRobot() {
-            robotEnabled = !robotEnabled;
-            const btn = document.getElementById('robotToggle');
-            btn.textContent = robotEnabled ? '🚫 Disable Robot' : '▶️ Enable Robot';
+        function updateStatus(msg) {
+            document.getElementById('status').textContent = msg;
         }
         
-        function newGame() {
-            playerMoves = robotMoves = 0;
-            openTiles = [];
-            robotTurn = false;
-            robotEnabled = true;
-            document.getElementById('robotToggle').textContent = '🚫 Disable Robot';
-            initBoard();
+        function newRound() {
+            game.round++;
+            deal();
         }
         
-        function hint() {
-            for (let y1 = 0; y1 < board.length; y1++) {
-                for (let x1 = 0; x1 < 20; x1++) {
-                    if (board[y1][x1] && isFree(x1, y1)) {
-                        for (let y2 = 0; y2 < board.length; y2++) {
-                            for (let x2 = 0; x2 < 20; x2++) {
-                                if ((x2 !== x1 || y2 !== y1) && board[y2][x2] === board[y1][x1] && isFree(x2, y2)) {
-                                    document.querySelectorAll('.tile')[y1 * 20 + x1].style.boxShadow = '0 0 30px #FFD700';
-                                    setTimeout(() => {
-                                        document.querySelectorAll('.tile')[y1 * 20 + x1].style.boxShadow = '';
-                                    }, 2000);
-                                    return;
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            alert('No available matches!');
+        function endRound() {
+            updateStatus('Round ended! New round starting...');
+            setTimeout(newRound, 2000);
         }
         
-        // Start the game
-        document.getElementById('robotToggle').onclick = toggleRobot;
-        initBoard();
-        setTimeout(() => { if (robotEnabled) robotMove(); }, 1500);
+        // Initialize game
+        document.getElementById('robotToggle')?.addEventListener('click', toggleRobot);
+        deal();
     </script>
 </body>
 </html>
