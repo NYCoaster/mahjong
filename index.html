@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Taiwanese Mahjong Solitaire 台灣麻將</title>
+    <style>
+        body { margin: 0; padding: 20px; font-family: 'Noto Sans TC', Arial, sans-serif; background: linear-gradient(135deg, #ff6b6b, #4ecdc4); display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&display=swap');
+        #game { display: grid; grid-template-columns: repeat(20, 1fr); gap: 3px; max-width: 900px; margin: 20px auto; position: relative; }
+        .tile { aspect-ratio: 1; background: linear-gradient(145deg, #f8f9fa, #e9ecef); border: 3px solid #495057; border-radius: 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 20px; font-weight: bold; cursor: pointer; transition: all 0.3s ease; position: relative; box-shadow: 0 4px 12px rgba(0,0,0,0.15); text-shadow: 1px 1px 1px rgba(255,255,255,0.8); }
+        .tile::before { content: attr(data-pips); position: absolute; top: 2px; font-size: 12px; color: #666; }
+        .tile.matched { visibility: hidden; animation: fadeOut 0.5s; }
+        .tile.open { border-color: #28a745; transform: scale(1.08) translateY(-5px); box-shadow: 0 8px 25px rgba(40,167,69,0.4); }
+        .tile.disabled { opacity: 0.4; cursor: not-allowed; }
+        @keyframes fadeOut { to { opacity: 0; transform: scale(0); } }
+        #ui { text-align: center; color: #2c3e50; margin: 20px; }
+        button { padding: 12px 24px; font-size: 16px; margin: 8px; border: none; border-radius: 8px; background: linear-gradient(145deg, #28a745, #20c997); color: white; cursor: pointer; font-weight: bold; box-shadow: 0 4px 12px rgba(40,167,69,0.3); transition: all 0.2s; }
+        button:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(40,167,69,0.4); }
+        #moves { font-size: 20px; font-weight: bold; color: #e74c3c; }
+        h1 { font-size: 2.5em; margin: 0; background: linear-gradient(45deg, #ff6b6b, #4ecdc4); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+        @media (max-width: 768px) { #game { grid-template-columns: repeat(18, 1fr); gap: 2px; } .tile { font-size: 18px; } .tile::before { font-size: 10px; } }
+        @media (max-width: 480px) { #game { grid-template-columns: repeat(16, 1fr); } }
+    </style>
+</head>
+<body>
+    <div id="ui">
+        <h1>🀄 台灣麻將 solitaire</h1>
+        <div id="moves">步數: 0</div>
+        <button onclick="newGame()">新遊戲</button>
+        <button onclick="hint()">提示</button>
+    </div>
+    <div id="game"></div>
+
+    <script>
+        // Authentic Taiwanese Mahjong tiles (16 types × 4 each = 64 pairs)
+        const taiwaneseTiles = [
+            //萬子 (Wan)
+            '🀇','🀈','🀉','🀊','🀋','🀌','🀍','🀎','🀏',
+            //筒子 (Tong)
+            '🀙','🀚','🀛','🀜','🀝','🀞','🀟','🀠','🀡',
+            //條子 (Tiao) 
+            '🀐','🀑','🀒','🀓','🀔','🀕','🀖','🀗','🀘'
+        ];
+        
+        let board = [], openTiles = [], moves = 0;
+
+        // Traditional Taiwanese pyramid layout (144 tiles)
+        function initBoard() {
+            const pyramidLayout = generatePyramidLayout();
+            let tileDeck = [...taiwaneseTiles, ...taiwaneseTiles, ...taiwaneseTiles, ...taiwaneseTiles]; // 4 sets
+            shuffle(tileDeck);
+            
+            let flatBoard = [];
+            pyramidLayout.forEach((row, rowIndex) => {
+                row.forEach((hasTile, colIndex) => {
+                    flatBoard.push(hasTile ? tileDeck.pop() : 0);
+                });
+            });
+            
+            board = chunkArray(flatBoard, 20);
+            renderBoard();
+        }
+
+        // Classic Taiwanese 20-column pyramid (144 tiles)
+        function generatePyramidLayout() {
+            return [
+                [0,0,0,0,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0],
+                [0,0,0,1,2,2,2,2,2,2,2,2,2,1,1,0,0,0,0,0],
+                [0,0,1,2,3,3,3,3,3,3,3,3,2,1,1,1,0,0,0,0],
+                [0,1,2,3,4,4,4,4,4,4,4,4,3,2,1,1,1,0,0,0],
+                [1,2,3,4,5,5,5,5,5,5,5,5,4,3,2,1,1,0,0,0],
+                [2,3,4,5,6,6,6,6,6,6,6,6,5,4,3,2,1,1,0,0],
+                [3,4,5,6,7,7,7,7,7,7,7,7,6,5,4,3,2,1,1,0],
+                [4,5,6,7,8,8,8,8,8,8,8,8,7,6,5,4,3,2,1,1]
+            ];
+        }
+
+        function chunkArray(arr, size) {
+            return arr.reduce((rows, item, idx) => 
+                (idx % size === 0 ? rows.push([item]) : rows[rows.length-1].push(item)) && rows, []);
+        }
+
+        function shuffle(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        function renderBoard() {
+            const gameEl = document.getElementById('game');
+            gameEl.innerHTML = '';
+            board.forEach((row, y) => {
+                row.forEach((tile, x) => {
+                    const tileEl = document.createElement('div');
+                    if (tile) {
+                        tileEl.className = 'tile';
+                        tileEl.textContent = tile;
+                        tileEl.dataset.pips = getPips(tile);
+                        tileEl.onclick = () => selectTile(x, y);
+                    } else {
+                        tileEl.style.visibility = 'hidden';
+                        tileEl.style.height = '0';
+                    }
+                    gameEl.appendChild(tileEl);
+                });
+            });
+            updateDisabled();
+        }
+
+        function getPips(tile) {
+            const pips = { '🀇': '1', '🀈': '2', '🀉': '3', '🀊': '4', '🀋': '5', '🀌': '6', '🀍': '7', '🀎': '8', '🀏': '9',
+                          '🀙': '1', '🀚': '2', '🀛': '3', '🀜': '4', '🀝': '5', '🀞': '6', '🀟': '7', '🀠': '8', '🀡': '9' };
+            return pips[tile] || '';
+        }
+
+        function selectTile(x, y) {
+            if (!board[y] || board[y][x] === 0 || openTiles.some(([ox, oy]) => ox === x && oy === y) || !isFree(x, y)) return;
+            
+            const tile = board[y][x];
+            openTiles.push([x, y]);
+            const tileIndex = y * 20 + x;
+            document.querySelectorAll('.tile')[tileIndex].classList.add('open');
+            
+            if (openTiles.length === 2) {
+                moves++;
+                document.getElementById('moves').textContent = `步數: ${moves}`;
+                
+                const [x1, y1] = openTiles[0];
+                if (board[y1][x1] !== tile) {
+                    setTimeout(() => closeMismatch(), 800);
+                } else {
+                    setTimeout(() => matchSuccess(x, y, x1, y1), 800);
+                }
+            }
+            updateDisabled();
+        }
+
+        function closeMismatch() {
+            openTiles.forEach(([x, y]) => {
+                const idx = y * 20 + x;
+                document.querySelectorAll('.tile')[idx].classList.remove('open');
+            });
+            openTiles = [];
+            updateDisabled();
+        }
+
+        function matchSuccess(x2, y2, x1, y1) {
+            [x1, y1, x2, y2].forEach((coord, i) => {
+                const [x, y] = i % 2 === 0 ? [x1, y1] : [x2, y2];
+                board[y][x] = 0;
+                const idx = y * 20 + x;
+                document.querySelectorAll('.tile')[idx].classList.add('matched');
+            });
+            openTiles = [];
+            checkWin();
+            updateDisabled();
+        }
+
+        function isFree(x, y) {
+            // Left and right edges free
+            const leftFree = x === 0 || board[y][x-1] === 0;
+            const rightFree = x === 19 || board[y][x+1] === 0;
+            // Top edge free
+            const topFree = y === 0 || board[y-1][x] === 0;
+            return (leftFree || rightFree) && topFree;
+        }
+
+        function updateDisabled() {
+            document.querySelectorAll('.tile').forEach((el, i) => {
+                const x = i % 20, y = Math.floor(i / 20);
+                if (board[y]?.[x] && !el.classList.contains('open') && !el.classList.contains('matched')) {
+                    el.classList.toggle('disabled', !isFree(x, y));
+                }
+            });
+        }
+
+        function checkWin() {
+            if (board.flat().every(t => t === 0)) {
+                setTimeout(() => alert('🎉 恭喜通關！\nCongratulations!'), 500);
+            }
+        }
+
+        function newGame() {
+            moves = 0;
+            openTiles = [];
+            initBoard();
+            document.getElementById('moves').textContent = '步數: 0';
+        }
+
+        function hint() {
+            for (let y1 = 0; y1 < board.length; y1++) {
+                for (let x1 = 0; x1 < 20; x1++) {
+                    if (board[y1]?.[x1] && isFree(x1, y1)) {
+                        for (let y2 = 0; y2 < board.length; y2++) {
+                            for ( Circles x2 = 0; x2 < 20; x2++) {
+                                if ((x2 !== x1 || y2 !== y1) && board[y2]?.[x2] === board[y1][x1] && isFree(x2, y2)) {
+                                    const idx1 = y1 * 20 + x1;
+                                    document.querySelectorAll('.tile')[idx1].style.boxShadow = '0 0 20px gold';
+                                    setTimeout(() => document.querySelectorAll('.tile')[idx1].style.boxShadow = '', 1500);
+                                    return;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            alert('暫無可配對的牌！');
+        }
+
+        initBoard();
+    </script>
+</body>
+</html>
