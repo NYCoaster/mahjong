@@ -1,137 +1,186 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>🀄 Taiwanese Mahjong - FIXED</title>
+    <title>🀄 Taiwanese Mahjong - WHITE BACKGROUND</title>
     <style>
         body { 
-            font-family: Arial, sans-serif; 
-            background: linear-gradient(135deg, #2c3e50, #34495e); 
-            color: white; 
+            font-family: Arial; 
+            background: white; 
+            color: #333; 
             text-align: center; 
             padding: 20px;
         }
         .table { 
-            background: linear-gradient(#8B4513, #D2691E); 
+            background: linear-gradient(#F5F5F5, #E8E8E8); 
             border-radius: 20px; 
             padding: 30px; 
             max-width: 1000px; 
             margin: 0 auto; 
-            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
         }
         .hand { 
-            background: rgba(255,255,255,0.1); 
+            background: rgba(255,255,255,0.9); 
+            border: 3px solid #DDD;
             border-radius: 15px; 
             padding: 20px; 
             margin: 15px; 
             display: inline-block; 
-            backdrop-filter: blur(10px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
         }
+        
+        /* MAHJONG TILE GRAPHICS */
         .tile { 
             display: inline-block; 
-            width: 45px; 
-            height: 60px; 
-            margin: 3px; 
-            border-radius: 8px; 
-            line-height: 60px; 
-            font-size: 14px; 
-            font-weight: bold; 
-            cursor: pointer; 
-            border: 2px solid rgba(0,0,0,0.3);
-            transition: all 0.2s;
+            width: 50px; 
+            height: 70px; 
+            margin: 4px; 
+            border-radius: 10px; 
             position: relative;
-            box-shadow: 2px 4px 8px rgba(0,0,0,0.3);
+            cursor: pointer; 
+            transition: all 0.3s;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15),
+                        inset 0 1px 0 rgba(255,255,255,0.8),
+                        inset 0 -2px 4px rgba(0,0,0,0.1);
+            font-weight: bold; 
+            font-size: 16px;
+            line-height: 70px;
+            text-shadow: 1px 1px 1px rgba(0,0,0,0.3);
+            border: 1px solid rgba(0,0,0,0.1);
         }
-        .tile:hover { transform: scale(1.05); }
+        
+        /* CIRCLE TILES - ORANGE DOTS */
+        .circles { 
+            background: linear-gradient(145deg, #FF6B35 0%, #FF8C42 50%, #FF9500 100%);
+            color: #FFF;
+        }
+        
+        /* BAMBOO TILES - GREEN STICKS */
+        .bamboos { 
+            background: repeating-linear-gradient(
+                90deg, 
+                #228B22 0px, 
+                #228B22 4px, 
+                #32CD32 4px, 
+                #32CD32 8px
+            ), linear-gradient(145deg, #90EE90, #228B22);
+            color: #FFF;
+        }
+        
+        /* CHARACTER TILES - BROWN 万 */
+        .characters { 
+            background: linear-gradient(145deg, #8B4513 0%, #A0522D 50%, #D2691E 100%);
+            color: #FFF;
+        }
+        
+        /* HONOR TILES - WINDS & DRAGONS */
+        .honors { 
+            background: linear-gradient(145deg, #4169E1 0%, #1E90FF 100%);
+            color: #FFF;
+            font-size: 20px;
+        }
+        .honors.e::before { content: '東'; }
+        .honors.s::before { content: '南'; }
+        .honors.w::before { content: '西'; }
+        .honors.n::before { content: '北'; }
+        .honors.rd::before { content: '中'; }
+        .honors.gd::before { content: '發'; }
+        .honors.wd::before { content: '白'; }
+        
+        /* BONUS TILES - FLOWERS */
+        .bonus { 
+            background: linear-gradient(145deg, #FF69B4 0%, #FF1493 70%, #C71585 100%);
+            color: #FFF;
+            font-size: 14px;
+        }
+        
+        /* INTERACTION EFFECTS */
+        .tile:hover { 
+            transform: translateY(-6px) scale(1.08) !important; 
+            box-shadow: 0 8px 20px rgba(0,0,0,0.2) !important;
+        }
         .tile.selected { 
-            box-shadow: 0 0 20px gold; 
-            transform: scale(1.1); 
+            background: linear-gradient(145deg, #FFD700, #FFA500) !important;
+            box-shadow: 0 0 30px rgba(255,215,0,0.8) !important;
+            transform: scale(1.15) translateY(-10px) !important;
+            z-index: 10;
+        }
+        .discard { 
+            background: linear-gradient(145deg, #FF4444, #CC0000) !important;
+            transform: rotate(8deg) translateX(8px) scale(0.95);
+            filter: brightness(1.2);
         }
         
-        /* REAL TILE COLORS */
-        .circles { background: linear-gradient(145deg, #FF6B35, #FF8C42); color: white; }
-        .bamboos { background: linear-gradient(145deg, #228B22, #32CD32); color: white; }
-        .characters { background: linear-gradient(145deg, #8B4513, #D2691E); color: white; }
-        .honors { background: linear-gradient(145deg, #4169E1, #1E90FF); color: white; }
-        .bonus { background: linear-gradient(145deg, #FF69B4, #FF1493); color: white; }
-        .discard { background: #ff4444 !important; transform: rotate(5deg); }
-        
+        /* WHITE BACKGROUND UI */
         button { 
-            padding: 12px 24px; 
-            font-size: 16px; 
+            padding: 15px 30px; 
+            font-size: 18px; 
             margin: 10px; 
             border: none; 
             border-radius: 25px; 
             cursor: pointer; 
             background: linear-gradient(#4CAF50, #45a049); 
             color: white; 
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            font-weight: bold;
         }
-        button:hover { transform: translateY(-2px); }
+        button:hover { transform: translateY(-3px); box-shadow: 0 7px 20px rgba(0,0,0,0.3); }
         
         #log { 
-            height: 250px; 
+            height: 280px; 
             overflow-y: scroll; 
-            background: rgba(0,0,0,0.5); 
+            background: rgba(248,248,248,0.95); 
             border-radius: 15px; 
             padding: 20px; 
             margin: 20px auto; 
             max-width: 1000px; 
             text-align: left;
+            border: 1px solid #DDD;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            color: #333;
         }
-        .current { border: 3px solid gold !important; }
+        .current { border-color: #FFD700 !important; box-shadow: 0 0 20px rgba(255,215,0,0.6); }
+        #status { font-size: 24px; margin: 20px; font-weight: bold; color: #333; }
+        h1 { color: #333; text-shadow: none; font-size: 2.5em; }
+        h3 { color: #555; }
     </style>
 </head>
 <body>
     <div class="table">
-        <h1>🀄 Taiwanese Mahjong vs Robots</h1>
+        <h1>🀄 Taiwanese Mahjong</h1>
         <div id="status">Click NEW GAME to start</div>
         
         <div id="hands"></div>
         
-        <button onclick="newGame()">New Game</button>
-        <button onclick="autoPlay()">Auto Turn</button>
-        <button onclick="showAll()">Show All Hands</button>
+        <button onclick="newGame()">🀄 New Game</button>
+        <button onclick="autoPlay()">⚡ Auto Turn</button>
+        <button onclick="showAll()">👁 Show All Hands</button>
         
         <div id="log"></div>
     </div>
 
     <script>
-        // GAME STATE
         const game = {
-            players: [],
-            wall: [],
-            currentPlayer: 0,
-            selectedTile: null,
-            gameOver: false
+            players: [], wall: [], currentPlayer: 0, selectedTile: null, gameOver: false
         };
 
-        // TILE DEFINITIONS
         const SUITS = ['c', 'b', 'ch'];
         const HONORS = ['e','s','w','n','rd','gd','wd'];
         const BONUS = ['f1','f2','f3','f4','s1','s2','s3','s4'];
 
-        // CREATE DECK (144 tiles)
         function createDeck() {
             let deck = [];
-            // Suits: 1-9 x4 each suit
             for(let suit of SUITS) {
                 for(let n=1; n<=9; n++) {
-                    for(let i=0; i<4; i++) {
-                        deck.push(`${n}${suit}`);
-                    }
+                    for(let i=0; i<4; i++) deck.push(`${n}${suit}`);
                 }
             }
-            // Honors x4 each
             for(let h of HONORS) {
-                for(let i=0; i<4; i++) {
-                    deck.push(h);
-                }
+                for(let i=0; i<4; i++) deck.push(h);
             }
-            // Bonus x1 each
             deck.push(...BONUS);
             return deck;
         }
 
-        // PLAYER CLASS
         class Player {
             constructor(name, isRobot) {
                 this.name = name;
@@ -140,22 +189,19 @@
                 this.bonus = [];
                 this.discards = [];
             }
-            
             sortHand() {
                 this.hand.sort((a,b) => a.localeCompare(b));
             }
         }
 
-        // NEW GAME
         function newGame() {
-            // Create and shuffle deck
             let deck = createDeck();
             for(let i = deck.length - 1; i > 0; i--) {
                 let j = Math.floor(Math.random() * (i + 1));
                 [deck[i], deck[j]] = [deck[j], deck[i]];
             }
             
-            game.wall = deck.slice(0, 120); // Simplified wall
+            game.wall = deck.slice(0, 120);
             game.players = [
                 new Player('You', false),
                 new Player('Robot 1', true),
@@ -163,20 +209,19 @@
                 new Player('Robot 3', true)
             ];
             
-            // Deal 16 tiles each
             game.players.forEach(player => {
                 player.hand = [];
                 player.bonus = [];
                 player.discards = [];
-                
                 for(let i = 0; i < 16; i++) {
-                    if(game.wall.length === 0) break;
-                    let tile = game.wall.shift();
-                    if(BONUS.includes(tile)) {
-                        player.bonus.push(tile);
-                        if(game.wall.length) tile = game.wall.shift();
+                    if(game.wall.length) {
+                        let tile = game.wall.shift();
+                        if(BONUS.includes(tile)) {
+                            player.bonus.push(tile);
+                            if(game.wall.length) tile = game.wall.shift();
+                        }
+                        player.hand.push(tile);
                     }
-                    player.hand.push(tile);
                 }
                 player.sortHand();
             });
@@ -184,41 +229,46 @@
             game.currentPlayer = 0;
             game.selectedTile = null;
             game.gameOver = false;
-            
             updateDisplay();
-            document.getElementById('status').innerHTML = 'Your turn - Click a tile twice to discard';
-            log('🎮 New game started!');
+            document.getElementById('status').innerHTML = 'Your turn! Click tiles twice to discard';
+            log('🎮 New game started - WHITE background!');
         }
 
-        // DISPLAY UPDATE
         function updateDisplay(showAll = false) {
             let html = '';
             game.players.forEach((player, i) => {
                 let style = (i === 0 || showAll) ? '' : 'display:none;';
-                let tileClass = i === game.currentPlayer ? 'current' : '';
+                let isCurrent = i === game.currentPlayer;
                 
                 let handHtml = player.hand.map(tile => 
                     `<div class="tile ${getTileClass(tile)} ${game.selectedTile === tile && i === 0 ? 'selected' : ''}" 
-                       onclick="selectTile('${tile}', ${i})">${getTileText(tile)}</div>`
+                       data-num="${getTileNumber(tile)}" 
+                       onclick="selectTile('${tile}', ${i})" title="${tile}">
+                    </div>`
                 ).join('');
                 
                 html += `
-                    <div class="hand ${tileClass}" style="${style}">
-                        <h3>${player.name} (${player.hand.length} tiles, ${player.bonus.length} bonus)</h3>
+                    <div class="hand ${isCurrent ? 'current' : ''}" style="${style}">
+                        <h3>${player.name} (${player.hand.length} tiles, ${player.bonus.length} 🌸)</h3>
                         <div>${handHtml}</div>
-                        <small>Discards: ${player.discards.slice(-5).map(getTileText).join(' ')}</small>
+                        <div style="font-size:12px;opacity:0.8;color:#666;">
+                            Discards: ${player.discards.slice(-4).map(getTileText).join(' ')}
+                        </div>
                     </div>
                 `;
             });
             document.getElementById('hands').innerHTML = html;
         }
 
-        // TILE CLASS AND TEXT
         function getTileClass(tile) {
             if(BONUS.includes(tile)) return 'bonus';
-            if(HONORS.includes(tile)) return 'honors';
+            if(HONORS.includes(tile)) return `honors ${tile}`;
             let suit = tile.slice(-1);
             return suit === 'c' ? 'circles' : suit === 'b' ? 'bamboos' : 'characters';
+        }
+
+        function getTileNumber(tile) {
+            return tile.slice(0, -1);
         }
 
         function getTileText(tile) {
@@ -227,36 +277,30 @@
             return tile.slice(0, -1);
         }
 
-        // TILE SELECTION
         function selectTile(tile, playerIdx) {
             if(game.gameOver || playerIdx !== 0 || game.currentPlayer !== 0) return;
             
             if(game.selectedTile === tile) {
-                // DISCARD
                 game.players[0].hand = game.players[0].hand.filter(t => t !== tile);
                 game.players[0].discards.push(tile);
                 game.selectedTile = null;
-                
-                log(`You discarded ${getTileText(tile)}`);
-                setTimeout(nextTurn, 500);
+                log(`✅ You discarded ${getTileText(tile)}`);
+                setTimeout(nextTurn, 600);
             } else {
                 game.selectedTile = tile;
                 updateDisplay();
-                log(`Selected: ${getTileText(tile)} (click again to discard)`);
+                log(`Selected: ${getTileText(tile)} (click again)`);
             }
         }
 
-        // ROBOT TURN
         function robotTurn() {
             let player = game.players[game.currentPlayer];
-            // Simple AI: discard random tile
-            let discard = player.hand.splice(Math.floor(Math.random() * player.hand.length), 1)[0];
+            let discardIdx = Math.floor(Math.random() * player.hand.length);
+            let discard = player.hand.splice(discardIdx, 1)[0];
             player.discards.push(discard);
-            
-            log(`${player.name} discards ${getTileText(discard)}`);
+            log(`🤖 ${player.name} discards ${getTileText(discard)}`);
         }
 
-        // NEXT TURN
         function nextTurn() {
             game.currentPlayer = (game.currentPlayer + 1) % 4;
             updateDisplay();
@@ -265,16 +309,15 @@
                 setTimeout(() => {
                     robotTurn();
                     setTimeout(nextTurn, 800);
-                }, 300);
+                }, 400);
             } else {
-                document.getElementById('status').innerHTML = 'Your turn - Click a tile twice to discard';
-                log('Your turn!');
+                document.getElementById('status').innerHTML = 'Your turn! Click tiles twice';
+                log('🎯 Your turn!');
             }
         }
 
-        // UTILITY FUNCTIONS
         function autoPlay() {
-            if(game.currentPlayer === 0 && game.selectedTile === null) {
+            if(game.currentPlayer === 0 && !game.selectedTile) {
                 let tile = game.players[0].hand[Math.floor(Math.random() * game.players[0].hand.length)];
                 selectTile(tile, 0);
             }
@@ -282,16 +325,14 @@
 
         function showAll() {
             updateDisplay(true);
-            log('Showing all hands');
+            log('👁 All hands visible');
         }
 
         function log(msg) {
-            let logDiv = document.getElementById('log');
-            logDiv.innerHTML += `<div>${msg}</div>`;
-            logDiv.scrollTop = logDiv.scrollHeight;
+            document.getElementById('log').innerHTML += `<div style="color:#555;">${msg}</div>`;
+            document.getElementById('log').scrollTop = 9999;
         }
 
-        // START GAME
         newGame();
     </script>
 </body>
