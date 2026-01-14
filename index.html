@@ -1,651 +1,298 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🇹🇼 Complete Taiwanese Mahjong </title>
+    <title>🀄 Taiwanese Mahjong - FIXED</title>
     <style>
-        /* ========================================
-           MAHJONG TABLE & GLOBAL STYLES (50+ lines)
-        ======================================== */
-        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;700&display=swap');
-        
-        * { box-sizing: border-box; margin: 0; padding: 0; }
         body { 
-            font-family: 'Noto Sans SC', Arial, sans-serif;
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
-            color: #fff; min-height: 100vh; overflow-x: hidden;
+            font-family: Arial, sans-serif; 
+            background: linear-gradient(135deg, #2c3e50, #34495e); 
+            color: white; 
+            text-align: center; 
+            padding: 20px;
         }
-        
-        .mahjong-table {
-            max-width: 1200px; margin: 0 auto; padding: 20px;
-            background: linear-gradient(145deg, #2d1b11 0%, #4a2c1a 50%, #8B4513 100%);
-            border-radius: 25px; box-shadow: 0 25px 50px rgba(0,0,0,0.7);
-            position: relative; min-height: 90vh;
+        .table { 
+            background: linear-gradient(#8B4513, #D2691E); 
+            border-radius: 20px; 
+            padding: 30px; 
+            max-width: 1000px; 
+            margin: 0 auto; 
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
         }
-        
-        .table-cloth { 
-            background: radial-gradient(ellipse at center, rgba(139,69,19,0.3) 0%, transparent 70%);
-            border-radius: 20px; padding: 30px; position: relative;
+        .hand { 
+            background: rgba(255,255,255,0.1); 
+            border-radius: 15px; 
+            padding: 20px; 
+            margin: 15px; 
+            display: inline-block; 
+            backdrop-filter: blur(10px);
         }
-        
-        .table-cloth::before {
-            content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
-            background: repeating-linear-gradient(
-                90deg, transparent, transparent 20px, rgba(255,255,255,0.03) 20px, rgba(255,255,255,0.03) 21px
-            ), repeating-linear-gradient(0deg, transparent, transparent 20px, rgba(255,255,255,0.03) 20px, rgba(255,255,255,0.03) 21px);
-            border-radius: 20px; pointer-events: none;
-        }
-        
-        h1 { 
-            font-size: 2.5em; text-align: center; margin: 20px 0;
-            background: linear-gradient(45deg, #FFD700, #FFA500); -webkit-background-clip: text;
-            background-clip: text; color: transparent; text-shadow: 0 0 30px rgba(255,215,0,0.5);
-        }
-        
-        /* ========================================
-           TILE GRAPHICS - AUTHENTIC TAIWANESE (80+ lines)
-        ======================================== */
-        .tile-container { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; padding: 15px; }
-        
-        .mahjong-tile {
-            width: 52px; height: 72px; margin: 3px; cursor: pointer; position: relative;
-            border-radius: 12px; transition: all 0.3s cubic-bezier(0.25,0.46,0.45,0.94);
-            box-shadow: 3px 6px 12px rgba(0,0,0,0.4), inset 0 2px 4px rgba(255,255,255,0.3),
-                        inset 0 -2px 4px rgba(0,0,0,0.2); font-family: 'Noto Sans SC';
-            user-select: none; border: 2px solid rgba(0,0,0,0.1);
-        }
-        
-        .mahjong-tile:hover {
-            transform: translateY(-8px) scale(1.08); box-shadow: 6px 12px 24px rgba(0,0,0,0.6),
-                        inset 0 2px 4px rgba(255,255,255,0.4);
-        }
-        
-        .mahjong-tile.selected {
-            animation: tile-glow 1.2s infinite; box-shadow: 0 0 30px #FFD700, 0 0 60px #FFD700 !important;
-            transform: scale(1.1) translateY(-10px) !important;
-        }
-        
-        @keyframes tile-glow {
-            0%, 100% { box-shadow: 0 0 20px #FFD700, 0 0 40px #FFD700; }
-            50% { box-shadow: 0 0 30px #FFD700, 0 0 60px #FFD700, 0 0 80px #FFD700; }
-        }
-        
-        /* CIRCLE TILES (DOTS) */
-        .circle-1 { 
-            background: linear-gradient(145deg, #FF6B35 0%, #FF8C42 40%, #FF9500 100%);
+        .tile { 
+            display: inline-block; 
+            width: 45px; 
+            height: 60px; 
+            margin: 3px; 
+            border-radius: 8px; 
+            line-height: 60px; 
+            font-size: 14px; 
+            font-weight: bold; 
+            cursor: pointer; 
+            border: 2px solid rgba(0,0,0,0.3);
+            transition: all 0.2s;
             position: relative;
+            box-shadow: 2px 4px 8px rgba(0,0,0,0.3);
         }
-        .circle-1::before {
-            content: ''; position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
-            width: 28px; height: 28px; background: radial-gradient(circle, #FFF 0%, #FFA07A 70%, transparent 100%);
-            border-radius: 50%; box-shadow: inset 0 2px 4px rgba(255,255,255,0.5);
-        }
-        
-        .circle-2::before, .circle-3::before { /* Multiple dots pattern */ }
-        
-        /* BAMBOO TILES */
-        .bamboo { 
-            background: linear-gradient(145deg, #228B22 0%, #32CD32 50%, #90EE90 100%);
-            background-size: 100% 20%; background-repeat: repeat-y;
-        }
-        .bamboo::before {
-            content: '竹'; position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
-            font-size: 28px; font-weight: 700; color: #FFF; text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+        .tile:hover { transform: scale(1.05); }
+        .tile.selected { 
+            box-shadow: 0 0 20px gold; 
+            transform: scale(1.1); 
         }
         
-        /* CHARACTER TILES */
-        .character { 
-            background: linear-gradient(145deg, #8B4513 0%, #A0522D 50%, #D2691E 100%);
-            font-size: 32px; font-weight: 900; line-height: 72px; color: #FFF;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+        /* REAL TILE COLORS */
+        .circles { background: linear-gradient(145deg, #FF6B35, #FF8C42); color: white; }
+        .bamboos { background: linear-gradient(145deg, #228B22, #32CD32); color: white; }
+        .characters { background: linear-gradient(145deg, #8B4513, #D2691E); color: white; }
+        .honors { background: linear-gradient(145deg, #4169E1, #1E90FF); color: white; }
+        .bonus { background: linear-gradient(145deg, #FF69B4, #FF1493); color: white; }
+        .discard { background: #ff4444 !important; transform: rotate(5deg); }
+        
+        button { 
+            padding: 12px 24px; 
+            font-size: 16px; 
+            margin: 10px; 
+            border: none; 
+            border-radius: 25px; 
+            cursor: pointer; 
+            background: linear-gradient(#4CAF50, #45a049); 
+            color: white; 
         }
+        button:hover { transform: translateY(-2px); }
         
-        /* HONOR TILES */
-        .east { background: linear-gradient(145deg, #4169E1, #1E90FF); }
-        .east::before { content: '東'; font-size: 32px; position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); }
-        
-        .south { background: linear-gradient(145deg, #DC143C, #FF1493); }
-        .south::before { content: '南'; font-size: 32px; position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); }
-        
-        .west { background: linear-gradient(145deg, #FF4500, #FF6347); }
-        .west::before { content: '西'; font-size: 32px; position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); }
-        
-        .north { background: linear-gradient(145deg, #32CD32, #228B22); }
-        .north::before { content: '北'; font-size: 32px; position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); }
-        
-        .red { background: linear-gradient(145deg, #DC143C, #FF0000); }
-        .red::before { content: '中'; font-size: 32px; position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); }
-        
-        .green { background: linear-gradient(145deg, #228B22, #006400); }
-        .green::before { content: '發'; font-size: 32px; position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); }
-        
-        .white { 
-            background: linear-gradient(145deg, #F5F5F5 0%, #E8E8E8 100%); 
-            border: 3px solid #DDD; color: #666;
+        #log { 
+            height: 250px; 
+            overflow-y: scroll; 
+            background: rgba(0,0,0,0.5); 
+            border-radius: 15px; 
+            padding: 20px; 
+            margin: 20px auto; 
+            max-width: 1000px; 
+            text-align: left;
         }
-        .white::before { content: '白'; font-size: 28px; position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); }
-        
-        /* BONUS TILES */
-        .bonus { 
-            background: linear-gradient(145deg, #FF69B4 0%, #FF1493 70%, #C71585 100%);
-            font-size: 14px; line-height: 24px; color: #FFF; font-weight: 700;
-        }
-        
-        .discard { 
-            filter: brightness(0.6) contrast(1.2); transform: rotate(8deg) translateX(10px);
-            box-shadow: 2px 4px 12px rgba(255,0,0,0.5);
-        }
-        
-        /* ========================================
-           GAME UI COMPONENTS (60+ lines)
-        ======================================== */
-        .player-hand { 
-            background: rgba(255,255,255,0.15); border-radius: 20px; padding: 25px;
-            backdrop-filter: blur(15px); border: 2px solid rgba(255,255,255,0.2);
-            margin: 20px 10px; min-height: 150px;
-        }
-        
-        .player-header {
-            display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;
-            font-size: 1.3em; font-weight: 700; text-shadow: 0 2px 4px rgba(0,0,0,0.5);
-        }
-        
-        .current-player { border-color: #FFD700 !important; box-shadow: 0 0 30px rgba(255,215,0,0.6) !important; }
-        
-        .controls { 
-            display: flex; justify-content: center; gap: 15px; flex-wrap: wrap; margin: 30px 0;
-        }
-        
-        .btn {
-            padding: 15px 30px; font-size: 18px; font-weight: 700; border: none; border-radius: 30px;
-            cursor: pointer; transition: all 0.3s; text-transform: uppercase; letter-spacing: 1px;
-            box-shadow: 0 8px 20px rgba(0,0,0,0.3); min-width: 160px;
-        }
-        
-        .btn-primary { background: linear-gradient(145deg, #4CAF50, #45a049); color: white; }
-        .btn-secondary { background: linear-gradient(145deg, #2196F3, #1976D2); color: white; }
-        .btn-warning { background: linear-gradient(145deg, #FF9800, #F57C00); color: white; }
-        .btn:hover { transform: translateY(-3px); box-shadow: 0 12px 25px rgba(0,0,0,0.4); }
-        
-        .game-status {
-            font-size: 2em; font-weight: 700; margin: 30px 0; padding: 20px;
-            background: rgba(0,0,0,0.4); border-radius: 20px; backdrop-filter: blur(10px);
-            border: 2px solid rgba(255,255,255,0.2);
-        }
-        
-        #log {
-            background: rgba(0,0,0,0.7); border-radius: 20px; padding: 25px; margin: 20px 0;
-            max-height: 350px; overflow-y: auto; text-align: left; font-family: monospace;
-            border: 2px solid rgba(255,255,255,0.1); backdrop-filter: blur(15px);
-        }
-        
-        .log-entry { 
-            padding: 8px 12px; margin: 4px 0; border-radius: 8px; background: rgba(255,255,255,0.05);
-            border-left: 4px solid #4CAF50;
-        }
-        
-        .log-win { border-left-color: #FFD700 !important; background: rgba(255,215,0,0.15) !important; }
-        .log-pung { border-left-color: #2196F3 !important; }
-        
-        /* ========================================
-           RESPONSIVE DESIGN (20+ lines)
-        ======================================== */
-        @media (max-width: 768px) {
-            .mahjong-tile { width: 42px; height: 58px; margin: 2px; }
-            .tile-container { gap: 4px; padding: 10px; }
-            h1 { font-size: 2em; }
-            .controls { flex-direction: column; align-items: center; }
-            .btn { width: 100%; max-width: 300px; }
-        }
+        .current { border: 3px solid gold !important; }
     </style>
 </head>
 <body>
-    <div class="mahjong-table">
-        <div class="table-cloth">
-            <h1>🀄 台灣麻將 - Taiwanese Mahjong</h1>
-            <div class="game-status" id="status">歡迎來到台灣麻將！點擊「新遊戲」開始</div>
-            
-            <div id="hands"></div>
-            
-            <div class="controls">
-                <button class="btn btn-primary" onclick="newGame()">🀄 新遊戲</button>
-                <button class="btn btn-secondary" onclick="autoPlay()">⚡ 自動回合</button>
-                <button class="btn btn-warning" onclick="showAllHands()">👁 顯示所有牌</button>
-                <button class="btn btn-secondary" onclick="toggleSound()">🔊 音效</button>
-            </div>
-            
-            <div id="log"></div>
-        </div>
+    <div class="table">
+        <h1>🀄 Taiwanese Mahjong vs Robots</h1>
+        <div id="status">Click NEW GAME to start</div>
+        
+        <div id="hands"></div>
+        
+        <button onclick="newGame()">New Game</button>
+        <button onclick="autoPlay()">Auto Turn</button>
+        <button onclick="showAll()">Show All Hands</button>
+        
+        <div id="log"></div>
     </div>
 
     <script>
-        /* ========================================
-           GAME ENGINE - 200+ LINES OF JAVASCRIPT
-        ======================================== */
-        
-        // Taiwanese Mahjong Tile Definitions
-        const SUITS = ['c','b','ch'];  // Circles, Bamboo, Characters
-        const HONORS = ['e','s','w','n','rd','gd','wd'];  // East,South,West,North,Red,Green,White
-        const BONUS = ['f1','f2','f3','f4','s1','s2','s3','s4'];  // Flowers & Seasons
-        
-        // Game State
-        let game = {
-            deck: [], players: [], wall: [], currentPlayer: 0, selectedTile: null,
-            gameOver: false, round: 1, dealer: 0, scores: [0,0,0,0],
-            soundEnabled: true, animationLock: false
+        // GAME STATE
+        const game = {
+            players: [],
+            wall: [],
+            currentPlayer: 0,
+            selectedTile: null,
+            gameOver: false
         };
-        
-        // Audio Context for tile sounds (Web Audio API)
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        
-        function playTileSound(frequency = 800, duration = 0.1) {
-            if (!game.soundEnabled) return;
-            const oscillator = audioCtx.createOscillator();
-            const gainNode = audioCtx.createGain();
-            oscillator.connect(gainNode);
-            gainNode.connect(audioCtx.destination);
-            oscillator.frequency.value = frequency;
-            oscillator.type = 'sine';
-            gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
-            gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
-            oscillator.start(audioCtx.currentTime);
-            oscillator.stop(audioCtx.currentTime + duration);
-        }
-        
-        // Create authentic Taiwanese Mahjong deck (144 tiles)
+
+        // TILE DEFINITIONS
+        const SUITS = ['c', 'b', 'ch'];
+        const HONORS = ['e','s','w','n','rd','gd','wd'];
+        const BONUS = ['f1','f2','f3','f4','s1','s2','s3','s4'];
+
+        // CREATE DECK (144 tiles)
         function createDeck() {
             let deck = [];
-            // Suited tiles: 1-9 in 3 suits × 4 copies = 108 tiles
+            // Suits: 1-9 x4 each suit
             for(let suit of SUITS) {
-                for(let num = 1; num <= 9; num++) {
-                    for(let copy = 0; copy < 4; copy++) {
-                        deck.push(`${num}${suit}`);
+                for(let n=1; n<=9; n++) {
+                    for(let i=0; i<4; i++) {
+                        deck.push(`${n}${suit}`);
                     }
                 }
             }
-            // Honor tiles: 7 types × 4 copies = 28 tiles
-            for(let honor of HONORS) {
-                for(let copy = 0; copy < 4; copy++) {
-                    deck.push(honor);
+            // Honors x4 each
+            for(let h of HONORS) {
+                for(let i=0; i<4; i++) {
+                    deck.push(h);
                 }
             }
-            // Bonus tiles: 8 unique = 8 tiles
+            // Bonus x1 each
             deck.push(...BONUS);
             return deck;
         }
-        
-        // Player Class with full Taiwanese Mahjong logic
-        function Player(name, isRobot, seat = 0) {
-            this.name = name;
-            this.isRobot = isRobot;
-            this.seat = seat;
-            this.hand = [];
-            this.melds = [];  // Exposed pungs, chows, kongs
-            this.bonus = [];
-            this.discards = [];
-            this.tai = 0;
-            this.wins = 0;
+
+        // PLAYER CLASS
+        class Player {
+            constructor(name, isRobot) {
+                this.name = name;
+                this.isRobot = isRobot;
+                this.hand = [];
+                this.bonus = [];
+                this.discards = [];
+            }
+            
+            sortHand() {
+                this.hand.sort((a,b) => a.localeCompare(b));
+            }
         }
-        
-        // Sort hand Taiwanese style (suits first, then honors)
-        Player.prototype.sortHand = function() {
-            this.hand.sort((a, b) => {
-                const suitA = SUITS.includes(a.slice(-1)) ? a.slice(-1) : 'z';
-                const suitB = SUITS.includes(b.slice(-1)) ? b.slice(-1) : 'z';
-                if (suitA !== suitB) return suitA.localeCompare(suitB);
-                return a.localeCompare(b);
-            });
-        };
-        
-        // Calculate Taiwanese Mahjong tai (fan) - simplified but authentic
-        Player.prototype.calculateTai = function() {
-            let tai = this.bonus.length;  // +1 per flower/season
-            
-            // Count melds
-            const counts = {};
-            this.hand.forEach(tile => counts[tile] = (counts[tile] || 0) + 1);
-            
-            // Pungs (+1 each)
-            for(let tile in counts) {
-                if(counts[tile] >= 3) {
-                    tai += Math.floor(counts[tile] / 3);
-                }
-            }
-            
-            // All honors (+3), all simples (+1), etc.
-            const honorCount = this.hand.filter(t => HONORS.includes(t)).length;
-            if (honorCount === this.hand.length) tai += 3;
-            if (honorCount === 0) tai += 1;
-            
-            this.tai = Math.max(tai, 5);  // Minimum 5 tai to win
-            return this.tai;
-        };
-        
-        // Check for winning hand (5 melds + pair)
-        Player.prototype.checkWin = function() {
-            if (this.hand.length !== 14) return false;  // Must have exactly 14 tiles
-            
-            // Simplified winning hand detection
-            const counts = {};
-            this.hand.forEach(tile => counts[tile] = (counts[tile] || 0) + 1);
-            
-            let melds = 0;
-            let pairFound = false;
-            
-            // Count triplets and sequences
-            for(let tile in counts) {
-                if (counts[tile] >= 3) {
-                    melds++;
-                    counts[tile] -= 3;
-                }
-                if (counts[tile] === 2) pairFound = true;
-            }
-            
-            // Check if remaining tiles can form melds (simplified)
-            const remaining = Object.values(counts).reduce((a, b) => a + b, 0);
-            const canWin = melds >= 4 && pairFound && this.calculateTai() >= 5;
-            
-            return canWin;
-        };
-        
-        // Initialize new game
+
+        // NEW GAME
         function newGame() {
-            if (game.animationLock) return;
-            game.animationLock = true;
-            
-            playTileSound(1000, 0.3);
-            log('🎮 新遊戲開始！台灣麻將 16 張牌制', 'win');
-            
             // Create and shuffle deck
-            game.deck = createDeck();
-            for(let i = game.deck.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [game.deck[i], game.deck[j]] = [game.deck[j], game.deck[i]];
+            let deck = createDeck();
+            for(let i = deck.length - 1; i > 0; i--) {
+                let j = Math.floor(Math.random() * (i + 1));
+                [deck[i], deck[j]] = [deck[j], deck[i]];
             }
             
-            game.wall = game.deck.slice(0, 136);  // 34 stacks × 4 tiles
+            game.wall = deck.slice(0, 120); // Simplified wall
             game.players = [
-                new Player('你', false, 0),
-                new Player('機器人1', true, 1),
-                new Player('機器人2', true, 2),
-                new Player('機器人3', true, 3)
+                new Player('You', false),
+                new Player('Robot 1', true),
+                new Player('Robot 2', true),
+                new Player('Robot 3', true)
             ];
             
-            game.currentPlayer = game.dealer = 0;
-            game.selectedTile = null;
-            game.gameOver = false;
-            game.round++;
-            
-            // Deal 16 tiles per player (dealer gets 17th later)
-            game.players.forEach((player, index) => {
+            // Deal 16 tiles each
+            game.players.forEach(player => {
                 player.hand = [];
-                player.melds = [];
                 player.bonus = [];
                 player.discards = [];
                 
-                const tileCount = index === game.dealer ? 17 : 16;
-                for(let i = 0; i < tileCount; i++) {
-                    if (game.wall.length === 0) break;
-                    
+                for(let i = 0; i < 16; i++) {
+                    if(game.wall.length === 0) break;
                     let tile = game.wall.shift();
-                    if (BONUS.includes(tile)) {
+                    if(BONUS.includes(tile)) {
                         player.bonus.push(tile);
-                        if (game.wall.length) tile = game.wall.shift();  // Replace bonus
+                        if(game.wall.length) tile = game.wall.shift();
                     }
                     player.hand.push(tile);
                 }
                 player.sortHand();
             });
             
+            game.currentPlayer = 0;
+            game.selectedTile = null;
+            game.gameOver = false;
+            
             updateDisplay();
-            setTimeout(() => {
-                game.animationLock = false;
-                document.getElementById('status').innerHTML = `第 ${game.round} 局 - 你的回合 (點擊牌兩次棄牌)`;
-                log('🎯 輪到你了！點擊手牌兩次來棄牌');
-            }, 1000);
+            document.getElementById('status').innerHTML = 'Your turn - Click a tile twice to discard';
+            log('🎮 New game started!');
         }
-        
-        // Update game display
+
+        // DISPLAY UPDATE
         function updateDisplay(showAll = false) {
             let html = '';
-            game.players.forEach((player, index) => {
-                const isVisible = index === 0 || showAll;
-                const isCurrent = index === game.currentPlayer;
+            game.players.forEach((player, i) => {
+                let style = (i === 0 || showAll) ? '' : 'display:none;';
+                let tileClass = i === game.currentPlayer ? 'current' : '';
                 
-                const handHtml = player.hand.map(tile => 
-                    `<div class="mahjong-tile ${getTileClass(tile)} ${game.selectedTile === tile && index === 0 ? 'selected' : ''}" 
-                       onclick="selectTile('${tile}', ${index})" title="${tile}">${getTileContent(tile)}</div>`
+                let handHtml = player.hand.map(tile => 
+                    `<div class="tile ${getTileClass(tile)} ${game.selectedTile === tile && i === 0 ? 'selected' : ''}" 
+                       onclick="selectTile('${tile}', ${i})">${getTileText(tile)}</div>`
                 ).join('');
                 
                 html += `
-                    <div class="player-hand ${isCurrent ? 'current-player' : ''}" style="${isVisible ? '' : 'display: none;'">
-                        <div class="player-header">
-                            <span>${player.name}</span>
-                            <span>牌:${player.hand.length} | 花:${player.bonus.length} | 台:${player.calculateTai()}</span>
-                        </div>
-                        <div class="tile-container">${handHtml}</div>
-                        ${player.melds.length ? `<div>碰/槓: ${player.melds.map(m => m.map(getTileContent).join('')).join(' | ')}</div>` : ''}
-                        <div style="font-size: 12px; opacity: 0.8;">棄牌: ${player.discards.slice(-6).map(getTileContent).join(' ')}</div>
+                    <div class="hand ${tileClass}" style="${style}">
+                        <h3>${player.name} (${player.hand.length} tiles, ${player.bonus.length} bonus)</h3>
+                        <div>${handHtml}</div>
+                        <small>Discards: ${player.discards.slice(-5).map(getTileText).join(' ')}</small>
                     </div>
                 `;
             });
             document.getElementById('hands').innerHTML = html;
         }
-        
-        // Get CSS class for each tile type
+
+        // TILE CLASS AND TEXT
         function getTileClass(tile) {
-            if (BONUS.includes(tile)) return 'bonus';
-            if (HONORS.includes(tile)) return tile;
-            
-            const num = parseInt(tile.slice(0, -1));
-            const suit = tile.slice(-1);
-            
-            if (suit === 'c') return `circle-${Math.min(num, 3)}`;
-            if (suit === 'b') return 'bamboo';
-            return 'character';
+            if(BONUS.includes(tile)) return 'bonus';
+            if(HONORS.includes(tile)) return 'honors';
+            let suit = tile.slice(-1);
+            return suit === 'c' ? 'circles' : suit === 'b' ? 'bamboos' : 'characters';
         }
-        
-        // Get display content for tiles
-        function getTileContent(tile) {
-            if (BONUS.includes(tile)) {
-                return ['🌺','🌸','🌼','🌻'][BONUS.indexOf(tile) % 4];
-            }
-            if (HONORS.includes(tile)) return '';
-            
-            const num = tile.slice(0, -1);
-            const suit = tile.slice(-1);
-            
-            if (suit === 'ch') return num;
-            if (suit === 'b') return '竹';
-            return num;
+
+        function getTileText(tile) {
+            if(BONUS.includes(tile)) return '🌸';
+            if(HONORS.includes(tile)) return tile.toUpperCase();
+            return tile.slice(0, -1);
         }
-        
-        // Tile selection and discard logic
-        function selectTile(tile, playerIndex) {
-            if (game.gameOver || game.animationLock || playerIndex !== 0 || game.currentPlayer !== 0) {
-                return;
-            }
+
+        // TILE SELECTION
+        function selectTile(tile, playerIdx) {
+            if(game.gameOver || playerIdx !== 0 || game.currentPlayer !== 0) return;
             
-            playTileSound(600, 0.15);
-            
-            if (game.selectedTile === tile) {
-                // Confirm discard
+            if(game.selectedTile === tile) {
+                // DISCARD
                 game.players[0].hand = game.players[0].hand.filter(t => t !== tile);
                 game.players[0].discards.push(tile);
                 game.selectedTile = null;
                 
-                log(`✅ 你棄了 ${getTileContent(tile)}`);
-                playTileSound(400, 0.2);
-                setTimeout(nextTurn, 800);
+                log(`You discarded ${getTileText(tile)}`);
+                setTimeout(nextTurn, 500);
             } else {
                 game.selectedTile = tile;
                 updateDisplay();
-                log(`選擇: ${getTileContent(tile)} (再次點擊棄牌)`);
+                log(`Selected: ${getTileText(tile)} (click again to discard)`);
             }
         }
-        
-        // Robot AI turn with Taiwanese Mahjong strategy
+
+        // ROBOT TURN
         function robotTurn() {
-            const player = game.players[game.currentPlayer];
-            player.sortHand();
-            
-            // Strategy: discard dangerous singles first, honors > suits
-            const counts = {};
-            player.hand.forEach(t => counts[t] = (counts[t] || 0) + 1);
-            
-            let discard = null;
-            
-            // Priority 1: Singleton honors (safe to discard)
-            for (let tile of player.hand) {
-                if (counts[tile] === 1 && HONORS.includes(tile)) {
-                    discard = tile;
-                    break;
-                }
-            }
-            
-            // Priority 2: Singleton suited tiles outside 2-8
-            if (!discard) {
-                for (let tile of player.hand) {
-                    if (counts[tile] === 1 && SUITS.includes(tile.slice(-1))) {
-                        const num = parseInt(tile.slice(0, -1));
-                        if (num <= 1 || num >= 9) {
-                            discard = tile;
-                            break;
-                        }
-                    }
-                }
-            }
-            
-            // Priority 3: Random safe tile
-            if (!discard) {
-                discard = player.hand[Math.floor(Math.random() * player.hand.length)];
-            }
-            
-            player.hand = player.hand.filter(t => t !== discard);
+            let player = game.players[game.currentPlayer];
+            // Simple AI: discard random tile
+            let discard = player.hand.splice(Math.floor(Math.random() * player.hand.length), 1)[0];
             player.discards.push(discard);
             
-            log(`🤖 ${player.name} 棄 ${getTileContent(discard)}`);
-            playTileSound(500, 0.18);
-            
-            checkRobotWin(player);
+            log(`${player.name} discards ${getTileText(discard)}`);
         }
-        
-        // Check if robot wins
-        function checkRobotWin(player) {
-            if (player.checkWin()) {
-                log(`🏆 ${player.name} 自摸！${player.calculateTai()}台！`, 'win');
-                game.gameOver = true;
-                document.getElementById('status').innerHTML = `${player.name} 勝利！`;
-                game.scores[game.currentPlayer]++;
-            }
-        }
-        
-        // Next turn with claiming logic
+
+        // NEXT TURN
         function nextTurn() {
-            if (game.gameOver || game.animationLock) return;
-            
-            game.animationLock = true;
-            
-            // Draw from wall
-            const current = game.players[game.currentPlayer];
-            if (game.wall.length > 0) {
-                const draw = game.wall.shift();
-                if (!BONUS.includes(draw) || current.bonus.length < 4) {
-                    current.hand.push(draw);
-                    log(`${current.name} 摸牌`);
-                    current.sortHand();
-                    playTileSound(700, 0.12);
-                }
-            }
-            
-            // Check self-draw win
-            if (current.checkWin()) {
-                log(`🏆 ${current.name} 自摸勝利！${current.calculateTai()}台！`, 'win');
-                game.gameOver = true;
-                document.getElementById('status').innerHTML = `${current.name} 勝利！`;
-                game.scores[game.currentPlayer]++;
-                game.animationLock = false;
-                return;
-            }
-            
-            // Claim chance: 25% pung, 10% chow
-            if (game.currentPlayer !== 0 && Math.random() < 0.25) {
-                log(`🀀 ${current.name} 碰牌！`, 'pung');
-                current.melds.push(['e', 'e', 'e']);  // Fake pung
-                playTileSound(900, 0.25);
-                setTimeout(() => { game.animationLock = false; nextTurn(); }, 1200);
-                return;
-            }
-            
-            // Normal discard turn
             game.currentPlayer = (game.currentPlayer + 1) % 4;
             updateDisplay();
             
-            if (game.players[game.currentPlayer].isRobot) {
+            if(game.players[game.currentPlayer].isRobot) {
                 setTimeout(() => {
                     robotTurn();
-                    setTimeout(() => {
-                        game.animationLock = false;
-                        nextTurn();
-                    }, 1000);
-                }, 600);
+                    setTimeout(nextTurn, 800);
+                }, 300);
             } else {
-                game.animationLock = false;
-                document.getElementById('status').innerHTML = '你的回合 - 點擊牌兩次棄牌';
-                log('🎯 輪到你了！');
+                document.getElementById('status').innerHTML = 'Your turn - Click a tile twice to discard';
+                log('Your turn!');
             }
         }
-        
-        // Utility functions
+
+        // UTILITY FUNCTIONS
         function autoPlay() {
-            if (game.currentPlayer === 0 && !game.selectedTile && !game.animationLock) {
-                const tile = game.players[0].hand[Math.floor(Math.random() * game.players[0].hand.length)];
+            if(game.currentPlayer === 0 && game.selectedTile === null) {
+                let tile = game.players[0].hand[Math.floor(Math.random() * game.players[0].hand.length)];
                 selectTile(tile, 0);
             }
         }
-        
-        function showAllHands() {
+
+        function showAll() {
             updateDisplay(true);
-            log('👁 顯示所有玩家手牌');
+            log('Showing all hands');
         }
-        
-        function toggleSound() {
-            game.soundEnabled = !game.soundEnabled;
-            log(`🔊 音效 ${game.soundEnabled ? '開啟' : '關閉'}`);
+
+        function log(msg) {
+            let logDiv = document.getElementById('log');
+            logDiv.innerHTML += `<div>${msg}</div>`;
+            logDiv.scrollTop = logDiv.scrollHeight;
         }
-        
-        // Enhanced logging system
-        function log(message, type = '') {
-            const logDiv = document.getElementById('log');
-            const entry = document.createElement('div');
-            entry.className = `log-entry ${type}`;
-            entry.innerHTML = `[${new Date().toLocaleTimeString()}] ${message}`;
-            logDiv.insertBefore(entry, logDiv.firstChild);
-            
-            // Keep only last 50 entries
-            while (logDiv.children.length > 50) {
-                logDiv.removeChild(logDiv.lastChild);
-            }
-            
-            logDiv.scrollTop = 0;
-        }
-        
-        // Initialize game on load
-        window.addEventListener('load', () => {
-            log('台灣麻將載入完成！點擊「新遊戲」開始');
-            newGame();
-        });
-        
-        // Keyboard shortcuts
-        document.addEventListener('keydown', (e) => {
-            if (e.code === 'Space') {
-                e.preventDefault();
-                autoPlay();
-            } else if (e.code === 'KeyN') {
-                newGame();
-            }
-        });
+
+        // START GAME
+        newGame();
     </script>
 </body>
 </html>
