@@ -1,275 +1,191 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Taiwanese Mahjong - Premium</title>
-    <style>
-        :root {
-            --table-green: #1a4a33;
-            --tile-ivory: #fffffa;
-            --tile-back: #006633;
-            --tile-shadow: rgba(0,0,0,0.3);
-        }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Taiwanese Mahjong - Actual Art</title>
+    <style>
+        :root {
+            --felt: #125e3b;
+            --tile: #ffffff;
+            --side: #d9d9d9;
+            --red: #d32f2f;
+            --green: #2e7d32;
+            --blue: #1976d2;
+        }
 
-        body {
-            background-color: var(--table-green);
-            background-image: radial-gradient(circle, #2e8b57 0%, #1a4a33 100%);
-            font-family: "Microsoft JhengHei", "Heiti TC", sans-serif;
-            color: white;
-            margin: 0;
-            display: flex;
-            justify-content: center;
-            height: 100vh;
-            overflow: hidden;
-        }
+        body {
+            background: radial-gradient(circle, #1a7a4d, #0d3d26);
+            margin: 0; display: flex; flex-direction: column; align-items: center; height: 100vh; font-family: sans-serif;
+        }
 
-        .game-container {
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            align-items: center;
-            width: 95%;
-            max-width: 1100px;
-            padding: 15px;
-            height: 98vh;
-        }
+        /* --- THE TILE --- */
+        .tile {
+            width: 52px; height: 74px; background: var(--tile);
+            border-radius: 4px; cursor: pointer; position: relative;
+            box-shadow: 1px 1px 0 var(--side), 2px 2px 0 var(--side), 3px 4px 10px rgba(0,0,0,0.5);
+            transition: 0.1s; display: flex; justify-content: center; align-items: center;
+        }
+        .tile:hover { transform: translateY(-12px); z-index: 10; }
+        .tile svg { width: 90%; height: 90%; }
 
-        /* --- INFO PANEL --- */
-        .info-panel {
-            text-align: center;
-            background: rgba(0,0,0,0.4);
-            padding: 10px 30px;
-            border-radius: 50px;
-            border: 1px solid rgba(255,255,255,0.1);
-            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-        }
+        /* Areas */
+        .hand { display: flex; gap: 4px; padding: 20px; height: 100px; align-items: flex-end; }
+        .opp .tile { background: linear-gradient(135deg, #008148, #0a4d2e); }
+        .opp .tile svg { display: none; }
+        .discards { display: grid; grid-template-columns: repeat(10, 1fr); gap: 6px; padding: 15px; background: rgba(0,0,0,0.2); border-radius: 10px; }
+        .discards .tile { width: 32px; height: 46px; }
 
-        h1 { margin: 0; font-size: 1.2rem; color: #ffd700; text-transform: uppercase; letter-spacing: 2px; }
-        #status { font-weight: 300; color: #ddd; margin: 5px 0; }
-
-        button {
-            padding: 5px 15px;
-            cursor: pointer;
-            background: linear-gradient(#eee, #ccc);
-            border: 1px solid #999;
-            border-radius: 3px;
-            font-weight: bold;
-            transition: all 0.2s;
-        }
-        button:hover { background: #fff; transform: scale(1.05); }
-
-        /* --- TILE DESIGN --- */
-        .tile {
-            position: relative;
-            width: 42px;
-            height: 58px;
-            background: var(--tile-ivory);
-            border-radius: 4px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 28px;
-            font-weight: bold;
-            cursor: pointer;
-            user-select: none;
-
-            /* The 3D effect: White face, Green back */
-            border: 1px solid #ddd;
-            border-bottom: 5px solid #bbb;
-            border-right: 3px solid #ccc;
-            box-shadow: 4px 4px 8px var(--tile-shadow);
-            transition: transform 0.1s, margin 0.2s;
-        }
-
-        /* Tile Back (for opponent) */
-        .opponent-hand .tile {
-            background: var(--tile-back);
-            background-image: linear-gradient(135deg, #007744 25%, #005522 100%);
-            border: 1px solid #004411;
-            border-bottom: 5px solid #003311;
-            border-right: 3px solid #004411;
-        }
-
-        /* Suit Colors - Traditional Palette */
-        .tile[data-suit="wan"] { color: #cc0000; }  /* Deep Red */
-        .tile[data-suit="tong"] { color: #1a4fa0; } /* Royal Blue */
-        .tile[data-suit="tiao"] { color: #1a8033; } /* Emerald Green */
-        .tile[data-suit="word"] { color: #222; }    /* Charcoal */
-        .tile[data-val="red"] { color: #ff0000; }
-        .tile[data-val="green"] { color: #00aa00; }
-
-        /* Interaction */
-        .player-hand .tile:hover {
-            transform: translateY(-12px);
-            z-index: 10;
-        }
-
-        .drawn-tile {
-            margin-left: 15px !important;
-            border: 2px solid gold !important;
-        }
-
-        /* --- LAYOUTS --- */
-        .hand {
-            display: flex;
-            justify-content: center;
-            align-items: flex-end;
-            gap: 2px;
-            padding: 15px;
-            width: 100%;
-        }
-
-        .table-center {
-            flex-grow: 1;
-            width: 100%;
-            background: rgba(0,0,0,0.1);
-            border-radius: 100px / 20px;
-            box-shadow: inset 0 0 50px rgba(0,0,0,0.3);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
-        }
-
-        .discard-pile {
-            display: grid;
-            grid-template-columns: repeat(10, 1fr);
-            gap: 5px;
-            max-width: 500px;
-        }
-
-        .discard-pile .tile {
-            width: 30px;
-            height: 42px;
-            font-size: 20px;
-            border-bottom-width: 3px;
-            border-right-width: 2px;
-            cursor: default;
-        }
-    </style>
+        /* Melding & UI */
+        .btn-row { height: 50px; display: flex; gap: 8px; margin: 10px; }
+        .btn { padding: 8px 18px; border: none; background: #ffc107; font-weight: bold; border-radius: 4px; cursor: pointer; display: none; }
+        .btn.active { display: block; }
+        .status { color: #ffc107; font-size: 1.2rem; font-weight: bold; }
+    </style>
 </head>
 <body>
 
-    <div class="game-container">
-        <div class="info-panel">
-            <h1>Taiwanese Mahjong</h1>
-            <div id="status">Initializing...</div>
-            <button onclick="initGame()">New Game</button>
-        </div>
+<div class="status" id="status" style="margin-top:20px;">YOUR TURN</div>
+<div class="hand opp" id="opp-hand"></div>
 
-        <div class="hand opponent-hand" id="opponent-hand"></div>
+<div style="flex-grow:1; display:flex; flex-direction:column; align-items:center; justify-content:center;">
+    <div class="discards" id="discard-pile"></div>
+    <div class="btn-row">
+        <button class="btn" id="pong" onclick="doMeld('pong')">PONG</button>
+        <button class="btn" id="chow" onclick="doMeld('chow')">CHOW</button>
+        <button class="btn" id="kong" onclick="doMeld('kong')">KONG</button>
+        <button class="btn" id="skip" onclick="skip()" style="background:#ddd">SKIP</button>
+    </div>
+</div>
 
-        <div class="table-center">
-            <div class="discard-pile" id="discard-pile"></div>
-        </div>
+<div style="display:flex; align-items:flex-end">
+    <div id="player-melds" style="display:flex; gap:10px; margin-right:15px;"></div>
+    <div class="hand" id="player-hand"></div>
+</div>
 
-        <div class="hand player-hand" id="player-hand"></div>
-    </div>
+<script>
+    // --- THE ART ENGINE ---
+    const Painter = {
+        tong(v) { // CIRCLES (TONG)
+            if (v === 1) return `<circle cx="50" cy="70" r="32" fill="none" stroke="#e67e22" stroke-width="2"/><circle cx="50" cy="70" r="24" fill="#e67e22"/><path d="M50 46 L50 94 M26 70 L74 70" stroke="white" stroke-width="2"/><circle cx="50" cy="70" r="8" fill="white" opacity="0.3"/>`;
+            let res = '';
+            for(let i=0; i<v; i++) {
+                let x = 25+(i%2)*50; let y = 30+Math.floor(i/2)*40; if(v%2!==0 && i===v-1) x=50;
+                let color = (v === 4 || v === 8) ? (i < v/2 ? '#d32f2f' : '#1976d2') : '#1976d2';
+                res += `<circle cx="${x}" cy="${y}" r="14" fill="${color}" stroke="white" stroke-width="1"/><circle cx="${x}" cy="${y}" r="4" fill="white" opacity="0.4"/>`;
+            }
+            return res;
+        },
+        tiao(v) { // BAMBOO (TIAO)
+            if (v === 1) return `<path d="M50 20 C70 20 85 50 50 120 C15 50 30 20 50 20" fill="#2e7d32"/><circle cx="50" cy="45" r="7" fill="white"/><circle cx="50" cy="45" r="3" fill="black"/><path d="M45 10 L50 25 L55 10" fill="#d32f2f"/>`;
+            let res = '';
+            for(let i=0; i<v; i++) {
+                let x = 20+(i%3)*30; let y = 30+Math.floor(i/3)*40;
+                res += `<rect x="${x}" y="${y}" width="14" height="30" rx="4" fill="#2e7d32"/><path d="M${x+3} ${y+15} L${x+11} ${y+15}" stroke="white" opacity="0.5"/>`;
+            }
+            return res;
+        },
+        wan(v) { // CHARACTERS (WAN)
+            return `<text x="50" y="58" text-anchor="middle" font-size="52" fill="#1976d2" font-weight="900" style="dominant-baseline:middle">${v}</text><text x="50" y="112" text-anchor="middle" font-size="52" fill="#d32f2f" font-weight="900" style="dominant-baseline:middle">萬</text>`;
+        },
+        word(v) { // WINDS
+            const m = {east:'東',south:'南',west:'西',north:'北',red:'中',green:'發',white:'白'};
+            let color = v==='red'?'#d32f2f':(v==='green'?'#2e7d32':'#333');
+            return `<text x="50" y="75" text-anchor="middle" font-size="85" fill="${color}" font-weight="bold" style="dominant-baseline:middle">${m[v]}</text>`;
+        }
+    };
 
-    <script>
-        const SUITS = ['wan', 'tong', 'tiao'];
-        const WORDS = ['east', 'south', 'west', 'north', 'red', 'green', 'white'];
-        const HAND_SIZE = 16;
+    let deck = [], playerHand = [], playerMelds = [], oppHand = [], discards = [], isTurn = false, lastDisc = null;
 
-        let deck = [], playerHand = [], opponentHand = [], discardPile = [], isPlayerTurn = true;
+    function init() {
+        deck = [];
+        ['wan','tong','tiao'].forEach(s => { for(let i=1; i<=9; i++) for(let c=0; c<4; c++) deck.push({s, v:i}); });
+        ['east','south','west','north','red','green','white'].forEach(v => { for(let c=0; c<4; c++) deck.push({s:'word', v}); });
+        deck.sort(() => Math.random() - 0.5);
+        playerHand = deck.splice(0, 16); oppHand = deck.splice(0, 16);
+        sortHand(playerHand); draw('player');
+    }
 
-        function initGame() {
-            deck = [];
-            SUITS.forEach(s => { for(let i=1; i<=9; i++) for(let c=0; c<4; c++) deck.push({s, v:i}); });
-            WORDS.forEach(v => { for(let c=0; c<4; c++) deck.push({s:'word', v}); });
+    function sortHand(h) { h.sort((a,b) => (a.s + a.v).localeCompare(b.s + b.v)); }
 
-            for(let i = deck.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [deck[i], deck[j]] = [deck[j], deck[i]];
-            }
+    function draw(who) {
+        if (!deck.length) return;
+        const t = deck.pop();
+        if (who === 'player') { playerHand.push(t); isTurn = true; document.getElementById('status').innerText = "YOUR TURN"; }
+        else { oppHand.push(t); setTimeout(aiDiscard, 1000); }
+        render();
+    }
 
-            playerHand = deck.splice(0, HAND_SIZE);
-            opponentHand = deck.splice(0, HAND_SIZE);
+    function discard(i) {
+        if (!isTurn) return;
+        lastDisc = playerHand.splice(i, 1)[0];
+        discards.push(lastDisc); isTurn = false;
+        sortHand(playerHand); render();
+        setTimeout(() => draw('opp'), 800);
+    }
 
-            sortHand(playerHand);
-            drawTile('player');
-        }
+    function aiDiscard() {
+        lastDisc = oppHand.splice(0, 1)[0];
+        discards.push(lastDisc); render();
+        checkMelds(lastDisc);
+    }
 
-        function drawTile(who) {
-            if (deck.length === 0) return updateStatus("Draw Game!");
-            const tile = deck.pop();
-            if (who === 'player') {
-                playerHand.push(tile);
-                isPlayerTurn = true;
-                updateStatus("Your turn: Discard a tile");
-            } else {
-                opponentHand.push(tile);
-                updateStatus("Opponent is thinking...");
-                setTimeout(aiDiscard, 1000);
-            }
-            render();
-        }
+    function checkMelds(t) {
+        let matched = playerHand.filter(x => x.s === t.s && x.v === t.v).length;
+        if (matched >= 2) document.getElementById('pong').classList.add('active');
+        if (matched >= 3) document.getElementById('kong').classList.add('active');
+        if (document.querySelectorAll('.btn.active').length > 0) {
+            document.getElementById('skip').classList.add('active');
+        } else {
+            setTimeout(() => draw('player'), 500);
+        }
+    }
 
-        function playerDiscard(idx) {
-            if (!isPlayerTurn) return;
-            discardPile.push(playerHand.splice(idx, 1)[0]);
-            isPlayerTurn = false;
-            sortHand(playerHand);
-            render();
-            setTimeout(() => drawTile('opponent'), 800);
-        }
+    function doMeld(type) {
+        discards.pop();
+        const matches = playerHand.filter(x => x.s === lastDisc.s && x.v === lastDisc.v).slice(0, type==='kong'?3:2);
+        playerMelds.push([lastDisc, ...matches]);
+        playerHand = playerHand.filter(x => !(x.s === lastDisc.s && x.v === lastDisc.v));
+        skip(); isTurn = true; render();
+    }
 
-        function aiDiscard() {
-            discardPile.push(opponentHand.splice(Math.floor(Math.random()*opponentHand.length), 1)[0]);
-            render();
-            setTimeout(() => drawTile('player'), 500);
-        }
+    function skip() {
+        document.querySelectorAll('.btn').forEach(b => b.classList.remove('active'));
+        if (!isTurn) draw('player');
+    }
 
-        function sortHand(hand) {
-            hand.sort((a,b) => (a.s + a.v).localeCompare(b.s + b.v));
-        }
+    function render() {
+        const p = document.getElementById('player-hand');
+        const o = document.getElementById('opp-hand');
+        const d = document.getElementById('discard-pile');
+        const m = document.getElementById('player-melds');
 
-        function getDisplay(t) {
-            if(t.s === 'wan') return t.v + '萬';
-            if(t.s === 'tong') return t.v + '筒';
-            if(t.s === 'tiao') return t.v + '索';
-            return {'east':'東','south':'南','west':'西','north':'北','red':'中','green':'發','white':'白'}[t.v];
-        }
+        p.innerHTML = ''; playerHand.forEach((t, i) => {
+            const el = document.createElement('div'); el.className = 'tile';
+            el.innerHTML = `<svg viewBox="0 0 100 140">${Painter[t.s](t.v)}</svg>`;
+            el.onclick = () => discard(i); p.appendChild(el);
+        });
 
-        function render() {
-            const pDiv = document.getElementById('player-hand');
-            const oDiv = document.getElementById('opponent-hand');
-            const dDiv = document.getElementById('discard-pile');
+        o.innerHTML = ''; oppHand.forEach(() => {
+            const el = document.createElement('div'); el.className = 'tile'; o.appendChild(el);
+        });
 
-            pDiv.innerHTML = '';
-            playerHand.forEach((t, i) => {
-                const el = document.createElement('div');
-                el.className = 'tile';
-                if (i === playerHand.length - 1 && isPlayerTurn) el.className += ' drawn-tile';
-                el.dataset.suit = t.s;
-                el.dataset.val = t.v;
-                el.innerText = getDisplay(t);
-                el.onclick = () => playerDiscard(i);
-                pDiv.appendChild(el);
-            });
+        d.innerHTML = ''; discards.forEach(t => {
+            const el = document.createElement('div'); el.className = 'tile';
+            el.innerHTML = `<svg viewBox="0 0 100 140">${Painter[t.s](t.v)}</svg>`; d.appendChild(el);
+        });
 
-            oDiv.innerHTML = '';
-            opponentHand.forEach(() => {
-                const el = document.createElement('div');
-                el.className = 'tile';
-                oDiv.appendChild(el);
-            });
+        m.innerHTML = ''; playerMelds.forEach(set => {
+            const wrap = document.createElement('div'); wrap.style.display = 'flex'; wrap.style.gap = '2px';
+            set.forEach(t => {
+                const el = document.createElement('div'); el.className = 'tile'; el.style.width = '35px'; el.style.height = '50px';
+                el.innerHTML = `<svg viewBox="0 0 100 140">${Painter[t.s](t.v)}</svg>`; wrap.appendChild(el);
+            });
+            m.appendChild(wrap);
+        });
+    }
 
-            dDiv.innerHTML = '';
-            discardPile.forEach(t => {
-                const el = document.createElement('div');
-                el.className = 'tile';
-                el.dataset.suit = t.s;
-                el.dataset.val = t.v;
-                el.innerText = getDisplay(t);
-                dDiv.appendChild(el);
-            });
-        }
-
-        function updateStatus(msg) { document.getElementById('status').innerText = msg; }
-
-        initGame();
-    </script>
+    init();
+</script>
 </body>
 </html>
