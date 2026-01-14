@@ -3,7 +3,7 @@
 <head>
  <meta charset="UTF-8">
  <meta name="viewport" content="width=device-width, initial-scale=1.0">
- <title>Taiwanese Mahjong - 4 Players</title>
+ <title>Taiwanese Mahjong - 2 Players </title>
  <style>
  :root {
  --table-green: #1a4a33; --tile-ivory: #fffffa; --tile-back: #006633; --tile-shadow: rgba(0,0,0,0.3);
@@ -23,75 +23,52 @@
  .tile { 
     position: relative; width: 42px; height: 58px; background: var(--tile-ivory); border-radius: 4px; 
     display: flex; justify-content: center; align-items: center; 
-    font-size: 28px; font-weight: bold; /* Base font size and weight */
+    font-size: 28px; font-weight: bold;
     cursor: pointer; user-select: none; border: 1px solid #ddd; border-bottom: 5px solid #bbb; border-right: 3px solid #ccc; box-shadow: 4px 4px 8px var(--tile-shadow); transition: transform 0.1s, margin 0.2s; 
  }
- .top-player-hand .tile, .left-player-hand .tile, .right-player-hand .tile {
-  background: var(--tile-back); border: 1px solid #004411; border-bottom: 5px solid #003311; border-right: 3px solid #004411;
-  /* Ensure these hands don't show text by having no color */
-  color: transparent !important; 
+ .opponent-hand .tile { 
+    background: var(--tile-back); background-image: linear-gradient(135deg, #007744 25%, #005522 100%); border: 1px solid #004411; border-bottom: 5px solid #003311; border-right: 3px solid #004411;
+    color: transparent !important;
  }
  .tile[data-suit="wan"] { color: #cc0000; } .tile[data-suit="tong"] { color: #1a4fa0; } .tile[data-suit="tiao"] { color: #1a8033; } .tile[data-suit="word"] { color: #333; }
  .tile[data-val="red"] { color: #ff0000; } .tile[data-val="green"] { color: #00aa00; }
  .player-hand .tile:hover { transform: translateY(-12px); z-index: 10; }
  .drawn-tile { margin-left: 15px !important; border: 2px solid gold !important; }
- .hand { display: flex; justify-content: center; align-items: flex-end; gap: 2px; padding: 15px; }
- .top-player-hand { transform: rotate(180deg); }
- .left-player-hand, .right-player-hand { flex-direction: column; height: 100%; justify-content: center; }
- .left-player-hand { transform: rotate(90deg); }
- .right-player-hand { transform: rotate(-90deg); }
+ .hand { display: flex; justify-content: center; align-items: flex-end; gap: 2px; padding: 15px; width: 100%; }
  .table-center { flex-grow: 1; width: 100%; background: rgba(0,0,0,0.1); border-radius: 100px / 20px; box-shadow: inset 0 0 50px rgba(0,0,0,0.3); display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px; }
- .discard-pile { 
-    display: grid; grid-template-columns: repeat(10, 1fr); gap: 5px; max-width: 500px;
-    /* FIX: Ensure colors and font settings apply here */
-    color: initial; 
- }
- .discard-pile .tile { 
-    width: 30px; height: 42px; 
-    font-size: 20px; /* Smaller font size for discard pile */
-    border-bottom-width: 3px; border-right-width: 2px; cursor: default; 
- }
+ .discard-pile { color: initial; display: grid; grid-template-columns: repeat(10, 1fr); gap: 5px; max-width: 500px; }
+ .discard-pile .tile { width: 30px; height: 42px; font-size: 20px; border-bottom-width: 3px; border-right-width: 2px; cursor: default; }
  .call-buttons { position: absolute; bottom: 120px; display: flex; gap: 10px; padding: 10px; background: rgba(0, 0, 0, 0.7); border-radius: 8px; z-index: 20; }
  .call-buttons button { padding: 10px 20px; font-size: 1rem; }
  .exposed-sets { display: flex; gap: 10px; margin-bottom: 10px; }
  .exposed-sets .tile { cursor: default; }
- .top-player-sets { transform: rotate(180deg); }
- .left-player-sets, .right-player-sets { margin: 10px 0; }
- .left-player-sets { transform: rotate(90deg); }
- .right-player-sets { transform: rotate(-90deg); }
+ /* Concealed Kong style: outer tiles face down */
+ .exposed-sets .concealed-kong-outer { color: transparent !important; background: var(--tile-back) !important; }
+
  </style>
 </head>
 <body>
  <div class="game-container">
   <div class="info-panel">
-   <h1>Taiwanese Mahjong (4P)</h1>
+   <h1>Taiwanese Mahjong (2P)</h1>
    <div id="status">Initializing...</div>
    <button onclick="initGame()">New Game</button>
   </div>
-  
-  <div class="hand top-player-hand" id="top-player-hand"></div>
-  <div class="exposed-sets top-player-sets" id="top-player-sets"></div>
-
-  <div style="display: flex; width: 100%; justify-content: space-between; align-items: center;">
-      <div class="exposed-sets left-player-sets" id="left-player-sets"></div>
-      <div class="hand left-player-hand" id="left-player-hand"></div>
-
-      <div class="table-center">
-        <div class="discard-pile" id="discard-pile"></div>
-      </div>
-
-      <div class="hand right-player-hand" id="right-player-hand"></div>
-      <div class="exposed-sets right-player-sets" id="right-player-sets"></div>
+  <div class="exposed-sets" id="opponent-exposed-sets"></div>
+  <div class="hand opponent-hand" id="opponent-hand"></div>
+  <div class="table-center">
+   <div class="discard-pile" id="discard-pile"></div>
   </div>
-  
-  <div class="exposed-sets" id="player-exposed-sets"></div>
   <div class="hand player-hand" id="player-hand"></div>
+  <div class="exposed-sets" id="player-exposed-sets"></div>
 
+  <!-- Updated Call Buttons Panel (includes Concealed Kong Button) -->
   <div class="call-buttons" id="call-buttons" style="display: none;">
       <button onclick="handleChow('player')">Chow (吃)</button>
       <button onclick="handlePung('player')">Pung (碰)</button>
       <button onclick="handleKong('player')">Kong (杠)</button>
       <button onclick="handleWin('player')">Win (和)</button>
+      <button onclick="handleConcealedKong()">Declare Kong</button>
       <button onclick="passTurn()">Pass</button>
   </div>
  </div>
@@ -99,17 +76,14 @@
   const SUITS = ['wan', 'tong', 'tiao'];
   const WORDS = ['east', 'south', 'west', 'north', 'red', 'green', 'white'];
   const HAND_SIZE = 16;
-  let deck = [], playerHand = [], rightHand = [], topHand = [], leftHand = [], discardPile = [];
-  let playerExposedSets = [], rightExposedSets = [], topExposedSets = [], leftExposedSets = [];
+  let deck = [], playerHand = [], opponentHand = [], discardPile = [];
+  let isPlayerTurn = true;
+  let playerExposedSets = [], opponentExposedSets = [];
   let lastDiscardedTile = null;
-  let activePlayerIndex = 0;
-  const playerOrder = ['player', 'right', 'top', 'left'];
-  const hands = { player: playerHand, right: rightHand, top: topHand, left: leftHand };
-  const exposedSets = { player: playerExposedSets, right: rightExposedSets, top: topExposedSets, left: leftExposedSets };
   let opponentTurnTimeout = null;
 
   function initGame() {
-   if (opponentTurnTimeout) clearTimeout(opponentTurnTimeout);
+   if (opponentTurnTimeout) clearTimeout(opponentTurnTimeout); 
    deck = [];
    SUITS.forEach(s => { for(let i=1; i<=9; i++) for(let c=0; c<4; c++) deck.push({s, v:i}); });
    WORDS.forEach(v => { for(let c=0; c<4; c++) deck.push({s:'word', v}); });
@@ -117,55 +91,36 @@
     const j = Math.floor(Math.random() * (i + 1));
     [deck[i], deck[j]] = [deck[j], deck[i]];
    }
-   playerHand = deck.splice(0, HAND_SIZE); rightHand = deck.splice(0, HAND_SIZE);
-   topHand = deck.splice(0, HAND_SIZE); leftHand = deck.splice(0, HAND_SIZE);
-   discardPile = [];
-   playerExposedSets = []; rightExposedSets = []; topExposedSets = []; leftExposedSets = [];
+   playerHand = deck.splice(0, HAND_SIZE); opponentHand = deck.splice(0, HAND_SIZE);
+   discardPile = []; sortHand(playerHand); drawTile('player'); toggleCallButtons([]);
+   playerExposedSets = []; opponentExposedSets = []; render();
+  }
 
-   sortHand(playerHand);
-   drawTile('player', false); 
-   updateStatus("Your turn (Dealer): Discard a tile to begin the game.");
+  function drawTile(who) {
+   if (deck.length === 0) return updateStatus("Draw Game!");
+   const tile = deck.pop();
+   if (who === 'player') {
+    playerHand.push(tile); isPlayerTurn = true; updateStatus("Your turn: Discard a tile");
+    checkForCalls('player', true); 
+   } else {
+    opponentHand.push(tile); updateStatus("Opponent is thinking...");
+    opponentTurnTimeout = setTimeout(aiDiscard, 1000); 
+   }
    render();
   }
 
-  function drawTile(who, nextPlayerAfter = true) {
-    if (deck.length === 0) return updateStatus("Draw Game!");
-    const tile = deck.pop();
-    if (who === 'player') hands.player.push(tile);
-    else if (who === 'right') hands.right.push(tile);
-    else if (who === 'top') hands.top.push(tile);
-    else if (who === 'left') hands.left.push(tile);
-    
-    if (who === 'player') {
-        checkForCalls('player', true);
-    } else if (nextPlayerAfter) {
-        setTimeout(aiDiscard, 1000, who);
-    }
-    render();
-  }
-
   function playerDiscard(idx) {
-    // Check if it's currently the player's turn to discard (only possible when they have 17 tiles)
-    if (playerHand.length % 3 !== 2) return; 
-
-    const tile = playerHand.splice(idx, 1);
-    discardPile.push(tile);
-    lastDiscardedTile = tile;
-    sortHand(playerHand);
-    render();
-    // After player discards, check all other players for calls, starting with the next logical player (right)
-    checkForCalls('right');
+    if (!isPlayerTurn || playerHand.length % 3 !== 2) return; 
+    const tile = playerHand.splice(idx, 1); discardPile.push(tile); lastDiscardedTile = tile;
+    isPlayerTurn = false; sortHand(playerHand); render();
+    checkForCalls('opponent'); 
   }
 
-  function aiDiscard(who) {
-    const hand = hands[who];
-    const idx = Math.floor(Math.random() * hand.length);
-    const tile = hand.splice(idx, 1);
-    discardPile.push(tile);
-    lastDiscardedTile = tile;
+  function aiDiscard() {
+    const idx = Math.floor(Math.random() * opponentHand.length);
+    const tile = opponentHand.splice(idx, 1); discardPile.push(tile); lastDiscardedTile = tile;
     render();
-    const nextPlayerIndex = (playerOrder.indexOf(who) + 1) % 4;
-    checkForCalls(playerOrder[nextPlayerIndex]);
+    checkForCalls('player');
   }
 
   function sortHand(hand) { hand.sort((a,b) => (a.s + a.v).localeCompare(b.s + b.v)); }
@@ -174,26 +129,20 @@
    return {'east':'東','south':'南','west':'西','north':'北','red':'中','green':'發','white':'白'}[t.v];
   }
   function render() {
-   // Clear and render all hands and exposed sets
-   document.getElementById('player-hand').innerHTML = ''; document.getElementById('right-player-hand').innerHTML = '';
-   document.getElementById('top-player-hand').innerHTML = ''; document.getElementById('left-player-hand').innerHTML = '';
+   document.getElementById('player-hand').innerHTML = ''; document.getElementById('opponent-hand').innerHTML = '';
    document.getElementById('discard-pile').innerHTML = '';
-   document.getElementById('player-exposed-sets').innerHTML = ''; document.getElementById('right-player-sets').innerHTML = '';
-   document.getElementById('top-player-sets').innerHTML = ''; document.getElementById('left-player-sets').innerHTML = '';
-
-   // Player hand render (shows last drawn tile highlight)
-   hands.player.forEach((t, i) => { const el = document.createElement('div'); el.className = 'tile'; if (i === hands.player.length - 1 && hands.player.length % 3 === 2) el.className += ' drawn-tile'; el.dataset.suit = t.s; el.dataset.val = t.v; el.innerText = getDisplay(t); el.onclick = () => playerDiscard(i); document.getElementById('player-hand').appendChild(el); });
-   // Opponent hands render (face down)
-   hands.right.forEach(() => { const el = document.createElement('div'); el.className = 'tile'; document.getElementById('right-player-hand').appendChild(el); });
-   hands.top.forEach(() => { const el = document.createElement('div'); el.className = 'tile'; document.getElementById('top-player-hand').appendChild(el); });
-   hands.left.forEach(() => { const el = document.createElement('div'); el.className = 'tile'; document.getElementById('left-player-hand').appendChild(el); });
-   // Discard pile render (face up)
+   document.getElementById('player-exposed-sets').innerHTML = ''; document.getElementById('opponent-exposed-sets').innerHTML = '';
+   playerHand.forEach((t, i) => { const el = document.createElement('div'); el.className = 'tile'; if (i === playerHand.length - 1 && isPlayerTurn) el.className += ' drawn-tile'; el.dataset.suit = t.s; el.dataset.val = t.v; el.innerText = getDisplay(t); el.onclick = () => playerDiscard(i); document.getElementById('player-hand').appendChild(el); });
+   opponentHand.forEach(() => { const el = document.createElement('div'); el.className = 'tile'; document.getElementById('opponent-hand').appendChild(el); });
    discardPile.forEach(t => { const el = document.createElement('div'); el.className = 'tile'; el.dataset.suit = t.s; el.dataset.val = t.v; el.innerText = getDisplay(t); document.getElementById('discard-pile').appendChild(el); });
-   // Exposed sets render (face up)
-   playerExposedSets.flat().forEach(t => { const el = document.createElement('div'); el.className = 'tile'; el.dataset.suit = t.s; el.dataset.val = t.v; el.innerText = getDisplay(t); document.getElementById('player-exposed-sets').appendChild(el); });
-   rightExposedSets.flat().forEach(t => { const el = document.createElement('div'); el.className = 'tile'; el.dataset.suit = t.s; el.dataset.val = t.v; el.innerText = getDisplay(t); document.getElementById('right-player-sets').appendChild(el); });
-   topExposedSets.flat().forEach(t => { const el = document.createElement('div'); el.className = 'tile'; el.dataset.suit = t.s; el.dataset.val = t.v; el.innerText = getDisplay(t); document.getElementById('top-player-sets').appendChild(el); });
-   leftExposedSets.flat().forEach(t => { const el = document.createElement('div'); el.className = 'tile'; el.dataset.suit = t.s; el.dataset.val = t.v; el.innerText = getDisplay(t); document.getElementById('left-player-sets').appendChild(el); });
+   playerExposedSets.flat().forEach(t => { 
+        const el = document.createElement('div'); el.className = 'tile';
+        // Add concealed kong class if needed for rendering face down tiles
+        // This is complex to track which sets are concealed vs exposed after the fact
+        el.dataset.suit = t.s; el.dataset.val = t.v; el.innerText = getDisplay(t); 
+        document.getElementById('player-exposed-sets').appendChild(el); 
+    });
+   opponentExposedSets.flat().forEach(t => { const el = document.createElement('div'); el.className = 'tile'; el.dataset.suit = t.s; el.dataset.val = t.v; el.innerText = getDisplay(t); document.getElementById('opponent-exposed-sets').appendChild(el); });
   }
   function updateStatus(msg) { document.getElementById('status').innerText = msg; }
 
@@ -204,6 +153,8 @@
       document.querySelector('[onclick*="handlePung"]').style.display = options.includes('pung') ? 'inline-block' : 'none';
       document.querySelector('[onclick*="handleKong"]').style.display = options.includes('kong') ? 'inline-block' : 'none';
       document.querySelector('[onclick*="handleWin"]').style.display = options.includes('win') ? 'inline-block' : 'none';
+      // New button for concealed kong
+      document.querySelector('[onclick*="handleConcealedKong"]').style.display = options.includes('concealedKong') ? 'inline-block' : 'none';
       document.querySelector('[onclick*="passTurn"]').style.display = 'inline-block';
       if (options.length > 0) updateStatus("You can make a call or Pass");
   }
@@ -211,12 +162,9 @@
   function canFormChow(hand, tile) {
     if (tile.s === 'word') return false; const value = parseInt(tile.v); const suit = tile.s;
     const t1 = hand.find(t => t.s === suit && t.v == value - 1); const t2 = hand.find(t => t.s === suit && t.v == value - 2);
-    if (t1 && t2) return true;
-    const t3 = hand.find(t => t.s === suit && t.v == value + 1); const t4 = hand.find(t => t.s === suit && t.v == value - 1);
-    if (t3 && t4) return true;
-    const t5 = hand.find(t => t.s === suit && t.v == value + 1); const t6 = hand.find(t => t.s === suit && t.v == value + 2);
-    if (t5 && t6) return true;
-    return false;
+    if (t1 && t2) return true; const t3 = hand.find(t => t.s === suit && t.v == value + 1); const t4 = hand.find(t => t.s === suit && t.v == value - 1);
+    if (t3 && t4) return true; const t5 = hand.find(t => t.s === suit && t.v == value + 1); const t6 = hand.find(t => t.s === suit && t.v == value + 2);
+    if (t5 && t6) return true; return false;
   }
   function cloneHand(hand) { return hand.map(t => ({ s: t.s, v: t.v })); }
 
@@ -241,50 +189,173 @@
       return false;
   }
 
+  // New function to check for a concealed kong in the hand
+  function checkForConcealedKong() {
+      // Use a frequency map to count occurrences of each tile
+      const counts = {};
+      playerHand.forEach(tile => {
+          const key = tile.s + tile.v;
+          counts[key] = (counts[key] || 0) + 1;
+      });
+
+      // Check if any tile appears 4 times
+      for (const key in counts) {
+          if (counts[key] === 4) {
+              // Found a potential concealed kong
+              toggleCallButtons(['concealedKong']);
+              return; 
+          }
+      }
+      // If loop finishes and no 4-of-a-kind found, just let the turn continue (discard)
+      updateStatus("Your turn: Discard a tile");
+  }
+
+
   function checkForCalls(caller, isSelfDraw = false) {
       if (caller === 'player') {
           let possibleCalls = [];
-          if (lastDiscardedTile) hands.player.push(lastDiscardedTile);
-          if (hands.player.length % 3 === 2 && isWinningHand(cloneHand(hands.player))) { possibleCalls.push('win'); }
-          if (lastDiscardedTile) hands.player.pop(); 
+          if (lastDiscardedTile) playerHand.push(lastDiscardedTile);
+          if (playerHand.length % 3 === 2 && isWinningHand(cloneHand(playerHand))) { possibleCalls.push('win'); }
+          if (lastDiscardedTile) playerHand.pop(); 
 
           if (isSelfDraw) {
-              toggleCallButtons(possibleCalls.includes('win') ? ['win'] : []);
-              if (possibleCalls.length === 0) updateStatus("Your turn: Discard a tile");
+              // After a self-draw, check for Win or Concealed Kong first
+              if (possibleCalls.includes('win')) { toggleCallButtons(['win']); return; }
+              checkForConcealedKong(); // Check for concealed kong if no win
+              // The check function handles the status message if no kong found
           } else if (lastDiscardedTile) {
+              // On opponent discard, check normal calls (Win is already checked by the block above)
               const tile = lastDiscardedTile;
-              const pungCount = hands.player.filter(t => t.s === tile.s && t.v === tile.v).length;
+              const pungCount = playerHand.filter(t => t.s === tile.s && t.v === tile.v).length;
               if (pungCount >= 2) possibleCalls.push('pung'); if (pungCount >= 3) possibleCalls.push('kong');
-              const discarderIndex = playerOrder.findIndex(p => hands[p] === discardPile[discardPile.length -1]); // This logic needs review for 4P game
-              // Check Chow only from left player (right player in UI)
-              // if (discarderIndex === 1 && canFormChow(hands.player, tile)) { possibleCalls.push('chow'); }
+              if (canFormChow(playerHand, tile)) { possibleCalls.push('chow'); }
+              // Add 'win' to calls if it's possible from a discarded tile
+              if (possibleCalls.includes('win')) { /* already added above */ }
+
               toggleCallButtons(possibleCalls); 
               if (possibleCalls.length === 0 && !isSelfDraw) passTurn();
           }
-      } else {
-          // AI logic for opponents (simple pass for now)
-          passTurn();
+      } else if (caller === 'opponent') {
+          aiHandleCall();
       }
   }
   
   function passTurn() {
-      const tilePassed = lastDiscardedTile; 
-      lastDiscardedTile = null; 
-      toggleCallButtons([]);
-      setTimeout(() => {
-          if (tilePassed) {
-             activePlayerIndex = (activePlayerIndex + 1) % 4;
-             drawTile(playerOrder[activePlayerIndex]);
-          }
-      }, 800);
+      const tilePassed = lastDiscardedTile; lastDiscardedTile = null; toggleCallButtons([]);
+      setTimeout(() => { if (tilePassed) drawTile('opponent'); }, 800);
   }
 
-  // Handle call functions need updating to find tiles in the respective player hands via the 'hands' map
-  function handlePung(caller) { /* ... TBD for 4P ... */ }
-  function drawReplacementTile(who) { /* ... TBD for 4P ... */ }
-  function handleKong(caller) { /* ... TBD for 4P ... */ }
-  function handleChow(caller) { /* ... TBD for 4P ... */ }
-  function handleWin(caller) { /* ... TBD for 4P ... */ }
+  function handlePung(caller) { 
+      if (caller !== 'player' || !lastDiscardedTile) return;
+      const tileToMatch = lastDiscardedTile; let tilesForPung = [tileToMatch]; let removedCount = 0;
+      for (let i = playerHand.length - 1; i >= 0 && removedCount < 2; i--) {
+          if (playerHand[i].s === tileToMatch.s && playerHand[i].v === tileToMatch.v) { tilesForPung.push(playerHand.splice(i, 1)); removedCount++; }
+      }
+      playerExposedSets.push(tilesForPung.flat()); lastDiscardedTile = null; discardPile.pop(); sortHand(playerHand);
+      toggleCallButtons([]); isPlayerTurn = true; updateStatus("You called Pung. Please discard a tile."); render();
+  }
+
+  function drawReplacementTile(who) {
+      if (deck.length === 0) return updateStatus("Draw Game!");
+      const tile = deck.pop();
+      if (who === 'player') {
+          playerHand.push(tile); isPlayerTurn = true;
+          if (isWinningHand(cloneHand(playerHand))) { toggleCallButtons(['win']); return; }
+          // After replacement draw, check for concealed kongs or force discard
+          checkForConcealedKong();
+      } else if (who === 'opponent') {
+          opponentHand.push(tile); updateStatus("Opponent drew replacement tile and is discarding...");
+          setTimeout(aiDiscard, 1000);
+      }
+      render();
+  }
+
+  function handleKong(caller) {
+    if (caller !== 'player' || !lastDiscardedTile) return;
+    const tileToMatch = lastDiscardedTile; let tilesForKong = [tileToMatch]; let removedCount = 0;
+    for (let i = playerHand.length - 1; i >= 0 && removedCount < 3; i--) {
+        if (playerHand[i].s === tileToMatch.s && playerHand[i].v === tileToMatch.v) { tilesForKong.push(playerHand.splice(i, 1)); removedCount++; }
+    }
+    playerExposedSets.push(tilesForKong.flat()); lastDiscardedTile = null; discardPile.pop(); sortHand(playerHand); toggleCallButtons([]);
+    drawReplacementTile('player');
+  }
+
+  // Handle concealed kong action
+  function handleConcealedKong() {
+      // Find the four-of-a-kind set (logic already exists in checkForConcealedKong)
+      const counts = {};
+      playerHand.forEach(tile => { const key = tile.s + tile.v; counts[key] = (counts[key] || 0) + 1; });
+      let kongKey = null;
+      for (const key in counts) { if (counts[key] === 4) { kongKey = key; break; } }
+      
+      if (kongKey) {
+          let tilesForKong = [];
+          for (let i = playerHand.length - 1; i >= 0; i--) {
+              if (playerHand[i].s + playerHand[i].v === kongKey) {
+                  tilesForKong.push(playerHand.splice(i, 1));
+              }
+          }
+          playerExposedSets.push(tilesForKong.flat());
+          toggleCallButtons([]);
+          drawReplacementTile('player'); // Draw a replacement tile
+      }
+  }
+
+
+  function handleChow(caller) { 
+      if (caller !== 'player' || !lastDiscardedTile) return;
+      const tileToMatch = lastDiscardedTile; const value = parseInt(tileToMatch.v); const suit = tileToMatch.s;
+      let tilesForChow = []; let hand = playerHand;
+      let t1 = hand.find(t => t.s === suit && t.v == value - 1); let t2 = hand.find(t => t.s === suit && t.v == value - 2); if (t1 && t2) { tilesForChow = [t2, t1]; } 
+      if (tilesForChow.length === 0) { t1 = hand.find(t => t.s === suit && t.v == value - 1); t2 = hand.find(t => t.s === suit && t.v == value + 1); if (t1 && t2) { tilesForChow = [t1, t2]; } }
+      if (tilesForChow.length === 0) { t1 = hand.find(t => t.s === suit && t.v == value + 1); t2 = hand.find(t => t.s === suit && t.v == value + 2); if (t1 && t2) { tilesForChow = [t1, t2]; } }
+      tilesForChow.forEach(foundTile => { const index = playerHand.indexOf(foundTile); if (index > -1) { playerHand.splice(index, 1); } });
+      tilesForChow.push(tileToMatch); tilesForChow.sort((a,b) => (a.s + a.v).localeCompare(b.s + b.v));
+      playerExposedSets.push(tilesForChow); lastDiscardedTile = null; discardPile.pop(); sortHand(playerHand);
+      toggleCallButtons([]); isPlayerTurn = true; updateStatus("You called Chow. Please discard a tile."); render();
+  }
+
+  function handleWin(caller) {
+      if (caller !== 'player') return;
+      const tileForWin = lastDiscardedTile;
+      if (tileForWin) playerHand.push(tileForWin);
+      if (isWinningHand(cloneHand(playerHand))) {
+        updateStatus("Mahjong! " + caller + " wins the game!"); toggleCallButtons([]); isPlayerTurn = false;
+      } else { 
+        if (tileForWin) playerHand.pop(); 
+        updateStatus("Invalid win declaration."); toggleCallButtons([]); passTurn();
+      }
+      render();
+  }
+
+  // --- AI LOGIC FUNCTIONS ---
+  function aiHandleCall() {
+      if (!lastDiscardedTile) { passTurn(); return; }
+      const tile = lastDiscardedTile;
+      opponentHand.push(tile);
+      if (opponentHand.length % 3 === 2 && isWinningHand(cloneHand(opponentHand))) { opponentHand.pop(); setTimeout(() => aiHandleWin(), 500); return; }
+      opponentHand.pop();
+      const kongCount = opponentHand.filter(t => t.s === tile.s && t.v === tile.v).length;
+      if (kongCount >= 3) { setTimeout(() => aiHandleKong(), 500); return; }
+      const pungCount = opponentHand.filter(t => t.s === tile.s && t.v === tile.v).length;
+      if (pungCount >= 2) { setTimeout(() => aiHandlePung(), 500); return; }
+      passTurn();
+  }
+  function aiHandlePung() {
+      const tileToMatch = lastDiscardedTile; let tilesForPung = [tileToMatch]; let removedCount = 0;
+      for (let i = opponentHand.length - 1; i >= 0 && removedCount < 2; i--) { if (opponentHand[i].s === tileToMatch.s && opponentHand[i].v === tileToMatch.v) { tilesForPung.push(opponentHand.splice(i, 1)); removedCount++; } }
+      opponentExposedSets.push(tilesForPung.flat()); lastDiscardedTile = null; discardPile.pop(); updateStatus("Opponent called Pung. Opponent is discarding..."); render(); setTimeout(aiDiscard, 1000);
+  }
+  function aiHandleKong() {
+      const tileToMatch = lastDiscardedTile; let tilesForKong = [tileToMatch]; let removedCount = 0;
+      for (let i = opponentHand.length - 1; i >= 0 && removedCount < 3; i--) { if (opponentHand[i].s === tileToMatch.s && opponentHand[i].v === tileToMatch.v) { tilesForKong.push(opponentHand.splice(i, 1)); removedCount++; } }
+      opponentExposedSets.push(tilesForKong.flat()); lastDiscardedTile = null; discardPile.pop(); updateStatus("Opponent called Kong. Opponent draws replacement tile..."); render(); setTimeout(() => drawReplacementTile('opponent'), 1000);
+  }
+  function aiHandleWin() {
+      if (!lastDiscardedTile) return;
+      opponentHand.push(lastDiscardedTile);
+      if (isWinningHand(cloneHand(opponentHand))) { updateStatus("Mahjong! Opponent wins the game!"); } render();
+  }
 
 
   initGame();
