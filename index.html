@@ -1,34 +1,50 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Taiwanese Mahjong with Robots</title>
+    <title>Complete Taiwanese Mahjong vs Robots</title>
     <style>
         body { font-family: Arial; background: #f0f8ff; text-align: center; }
-        .hand { display: inline-block; margin: 10px; background: white; border: 2px solid #ccc; padding: 10px; }
-        .tile { display: inline-block; width: 30px; height: 40px; margin: 2px; border: 1px solid #333; background: #ffe4b5; line-height: 40px; font-size: 12px; cursor: pointer; }
-        .tile:hover { background: #ffdab9; }
-        .discard { background: #ff6b6b; }
-        .meld { background: #90ee90; border: 2px solid green; }
-        button { padding: 10px 20px; font-size: 16px; margin: 10px; }
-        #log { height: 200px; overflow-y: scroll; border: 1px solid #ccc; padding: 10px; text-align: left; }
+        .hand { display: inline-block; margin: 10px; background: white; border: 2px solid #ccc; padding: 10px; border-radius: 10px; }
+        .tile { 
+            display: inline-block; width: 35px; height: 45px; margin: 2px; 
+            border: 1px solid #333; line-height: 22px; font-size: 10px; cursor: pointer;
+            position: relative; border-radius: 3px; transition: all 0.2s;
+        }
+        .suit-c { background: linear-gradient(#ffdbac, #ff8c42); color: black; }
+        .suit-b { background: linear-gradient(#90ee90, #228b22); color: white; }
+        .suit-ch { background: linear-gradient(#d3d3d3, #8b4513); color: black; }
+        .honor { background: linear-gradient(#4169e1, #000080); color: white; font-weight: bold; }
+        .bonus { background: linear-gradient(pink, magenta); color: black; font-size: 8px; }
+        .tile:hover { transform: scale(1.05); }
+        .selected { box-shadow: 0 0 10px gold; }
+        .discard { background: #ff6b6b !important; }
+        .meld { background: #90ee90; border: 2px solid green; margin: 5px 0; padding: 5px; }
+        button { padding: 10px 20px; font-size: 16px; margin: 10px; border: none; border-radius: 5px; cursor: pointer; }
+        #log { height: 250px; overflow-y: scroll; border: 1px solid #ccc; padding: 15px; text-align: left; background: #f9f9f9; font-family: monospace; }
+        .active { border-color: #ff6b6b; box-shadow: 0 0 15px rgba(255,107,107,0.5); }
+        .status { font-size: 20px; font-weight: bold; margin: 20px; }
     </style>
 </head>
 <body>
-    <h1>🀄 Taiwanese Mahjong vs Robots</h1>
-    <p>16-tile hands, first to 5+ tai wins. Click tiles to discard.</p>
+    <h1>🀄 Complete Taiwanese Mahjong vs Robots</h1>
+    <div class="status" id="status">Click NEW GAME to start!</div>
     
     <div id="hands"></div>
-    <button onclick="newGame()">New Game</button>
-    <button onclick="autoPlay()">Auto (1 turn)</button>
+    <button onclick="newGame()" style="background: #4CAF50; color: white;">New Game</button>
+    <button onclick="autoPlay()" style="background: #2196F3; color: white;">Auto Turn</button>
+    <button onclick="showAllHands()" style="background: #FF9800; color: white;">Show All Hands</button>
+    
     <div id="log"></div>
 
     <script>
-        // Taiwanese tiles: suits c/b/ch 1-9x4, honors e/s/w/n/rd/gd/wd x4, bonus f1-4/s1-4
         const SUITS = ['c','b','ch'], HONORS = ['e','s','w','n','rd','gd','wd'], BONUS = ['f1','f2','f3','f4','s1','s2','s3','s4'];
         
-        let game = { deck: [], players: [], wall: [], currentPlayer: 0, selectedTile: null, gameOver: false };
+        let game = { 
+            deck: [], players: [], wall: [], currentPlayer: 0, selectedTile: null, 
+            gameOver: false, round: 1, dealer: 0, tai: [0,0,0,0]
+        };
         
-        function createTile() {
+        function createDeck() {
             let deck = [];
             for(let suit of SUITS) for(let n=1; n<=9; n++) for(let i=0; i<4; i++) deck.push(`${n}${suit}`);
             for(let h of HONORS) for(let i=0; i<4; i++) deck.push(h);
@@ -37,105 +53,208 @@
         }
         
         function Player(name, isRobot) {
-            this.name = name; this.isRobot = isRobot; this.hand = []; this.melds = []; this.bonus = []; this.discards = [];
+            this.name = name; this.isRobot = isRobot; 
+            this.hand = []; this.melds = []; this.bonus = []; this.discards = [];
+            this.tai = 0;
         }
+        
+        Player.prototype.sortHand = function() {
+            this.hand.sort((a,b) => {
+                let sa = SUITS.includes(a.slice(-1)) ? a.slice(-1) : 'z';
+                let sb = SUITS.includes(b.slice(-1)) ? b.slice(-1) : 'z';
+                if(sa !== sb) return sa < sb ? -1 : 1;
+                return a.localeCompare(b);
+            });
+        };
+        
+        Player.prototype.checkWin = function() {
+            // Taiwanese: 5 melds (chow/pung/kong) + 1 pair = win
+            // Simplified: count triplets + sequences + pair
+            let counts = {};
+            this.hand.forEach(t => counts[t] = (counts[t]||0)+1);
+            
+            let melds = 0, pair = false;
+            for(let t in counts) {
+                if(counts[t] >= 3) { melds++; counts[t] -= 3; }
+            }
+            
+            // Check remaining for pair + possible chows (simplified)
+            let singles = Object.values(counts).filter(c => c > 0).length;
+            if(singles === 2) pair = true; // Assume workable
+            
+            this.tai = melds + this.bonus.length + (this.melds.length > 0 ? 1 : 0);
+            return melds >= 4 && pair && this.tai >= 5;
+        };
         
         function newGame() {
-            game.deck = createTile(); game.shuffle(game.deck); game.wall = game.deck.slice(0,136);
+            game.deck = createDeck();
+            for(let i=game.deck.length; i; i--) {
+                let j = Math.floor(Math.random()*i);
+                [game.deck[i-1], game.deck[j]] = [game.deck[j], game.deck[i-1]];
+            }
+            game.wall = game.deck.slice(0,136);
             game.players = [new Player('You'), new Player('Robot1',true), new Player('Robot2',true), new Player('Robot3',true)];
-            game.currentPlayer = 0; game.selectedTile = null; game.gameOver = false;
+            game.currentPlayer = game.dealer = 0; 
+            game.selectedTile = null; game.gameOver = false; game.round = 1;
+            game.tai = [0,0,0,0];
             
-            game.players.forEach(p => {
-                p.hand = []; p.melds = []; p.bonus = []; p.discards = [];
-                for(let i=0; i<16; i++) {
-                    let tile = game.draw();
+            game.players.forEach((p, i) => {
+                p.hand = []; p.melds = []; p.bonus = []; p.discards = []; p.tai = 0;
+                // Dealer gets 17th tile later
+                let tiles = i === game.dealer ? 17 : 16;
+                for(let j=0; j<tiles; j++) {
+                    let tile = game.wall.shift();
+                    if(BONUS.includes(tile)) { 
+                        p.bonus.push(tile); 
+                        if(game.wall.length) tile = game.wall.shift();
+                    }
                     p.hand.push(tile);
-                    if(BONUS.includes(tile)) { p.bonus.push(tile); p.hand.pop(); p.hand.push(game.draw()); }
                 }
-                game.sortHand(p);
+                p.sortHand();
             });
+            
             updateDisplay();
-            log(`${game.players[0].name}'s turn! Click a tile to discard.`);
+            log(`🎮 Round ${game.round} - ${game.players[game.dealer].name} deals! Your turn first.`);
+            document.getElementById('status').innerHTML = `Round ${game.round} - Your turn (click tile twice to discard)`;
         }
         
-        game.shuffle = arr => { for(let i=arr.length; i; i--) [arr[i-1], arr[i-1]] = [arr[rand()%i], arr[i-1]]; };
-        game.rand = Math.random;
-        game.draw = () => game.wall.shift();
-        game.sortHand = p => p.hand.sort((a,b) => a==b?0 : SUITS.includes(a.slice(-1)) !== SUITS.includes(b.slice(-1)) ? SUITS.includes(a.slice(-1))?-1:1 : a>b?-1:1);
-        
-        function updateDisplay() {
+        function updateDisplay(showAll = false) {
             let html = '';
             game.players.forEach((p,i) => {
-                let opp = i!==0 ? 'display:none;' : ''; // Hide robot hands
-                html += `<div class="hand ${i===game.currentPlayer?'active':''}" style="${opp}">
-                    <h3>${p.name} (${p.hand.length} tiles, ${p.bonus.length} bonus)</h3>
-                    ${p.hand.map(t => `<div class="tile ${game.selectedTile===t?'selected':''}" onclick="selectTile('${t}',${i})">${tileEmoji(t)}</div>`).join('')}
-                    ${p.melds.map(m => `<div class="meld">${m.map(tileEmoji).join('')}</div>`).join('')}
+                let style = (i===0 || showAll) ? '' : 'display:none;';
+                let handHtml = p.hand.map(t => 
+                    `<div class="tile ${getTileClass(t)} ${game.selectedTile===t&&i===0?'selected':''}" 
+                       onclick="selectTile('${t}',${i})">${getTileText(t)}</div>`
+                ).join('');
+                
+                html += `<div class="hand ${i===game.currentPlayer?'active':''}" style="${style}">
+                    <h3>${p.name} (T: ${p.hand.length} | 🌸: ${p.bonus.length} | Tai: ${p.tai})</h3>
+                    <div style="display: flex; flex-wrap: wrap; justify-content: center;">${handHtml}</div>
+                    ${p.melds.length ? `<div class="meld">Melds: ${p.melds.map(m => m.map(getTileText).join(' ')).join(' | ')}</div>` : ''}
+                    <div style="font-size: 10px;">Discards: ${p.discards.slice(-5).map(getTileText).join(' ')}</div>
                 </div>`;
             });
             document.getElementById('hands').innerHTML = html;
         }
         
-        function tileEmoji(t) {
-            const EMOJI = {'1c':'🀙','2c':'🀚','3c':'🀛','4c':'🀜','5c':'🀝','6c':'🀞','7c':'🀟','8c':'🀠','9c':'🀡',
-                          '1b':'🀐','2b':'🀑','3b':'🀒','4b':'🀓','5b':'🀔','6b':'🀕','7b':'🀖','8b':'🀗','9b':'🀘',
-                          '1ch':'🀇','2ch':'🀈','3ch':'🀉','4ch':'🀊','5ch':'🀋','6ch':'🀌','7ch':'🀍','8ch':'🀎','9ch':'🀏',
-                          'e':'🀀','s':'🀁','w':'🀂','n':'🀃','rd':'🀅','gd':'🀆','wd':'🀄','f1':'🀢','f2':'🀣'};
-            return EMOJI[t] || t;
+        function getTileClass(tile) {
+            if(BONUS.includes(tile)) return 'bonus';
+            if(HONORS.includes(tile)) return 'honor';
+            return `suit-${tile.slice(-1)}`;
+        }
+        
+        function getTileText(tile) {
+            if(BONUS.includes(tile)) return ['🌺','🌸','🌼','🌷'][BONUS.indexOf(tile)%4];
+            let num = tile.slice(0,-1);
+            let suit = tile.slice(-1);
+            if(suit === 'b') return '┃' + num;
+            if(suit === 'ch') return num + '万';
+            if(HONORS.includes(tile)) return tile.toUpperCase();
+            return num;
         }
         
         function selectTile(tile, playerIdx) {
-            if(game.gameOver || playerIdx!==0) return;
+            if(game.gameOver || game.currentPlayer !== 0 || playerIdx !== 0) return;
+            
             if(game.selectedTile === tile) {
+                // CONFIRM DISCARD
+                game.players[0].hand = game.players[0].hand.filter(t => t !== tile);
                 game.players[0].discards.push(tile);
-                game.players[0].hand = game.players[0].hand.filter(t => t!==tile);
-                log(`You discard ${tileEmoji(tile)}`);
-                nextTurn();
+                log(`✅ You discard ${getTileText(tile)}`);
                 game.selectedTile = null;
+                nextTurn();
             } else {
                 game.selectedTile = tile;
                 updateDisplay();
+                log(`Selected: ${getTileText(tile)} (click again to discard)`);
             }
         }
         
         function robotTurn() {
             let p = game.players[game.currentPlayer];
-            // Simple AI: discard singleton honor or random
-            let counts = {}, hand = p.hand.slice();
-            hand.forEach(t => counts[t] = (counts[t]||0)+1);
+            p.sortHand();
+            
+            // Smart AI: discard dangerous singles first
+            let counts = {};
+            p.hand.forEach(t => counts[t] = (counts[t]||0) + 1);
+            
             let discard = null;
-            for(let t in counts) if(counts[t]===1 && !SUITS.includes(t.slice(-1))) { discard=t; break; }
-            if(!discard) discard = hand[Math.floor(game.rand()*hand.length)];
-            p.discards.push(discard); p.hand = p.hand.filter(t => t!==discard);
-            log(`${p.name} discards ${tileEmoji(discard)}`);
+            // Prioritize: singleton honors > singleton suits > random
+            for(let t of p.hand) {
+                if(counts[t] === 1) {
+                    if(HONORS.includes(t)) { discard = t; break; }
+                    if(SUITS.includes(t.slice(-1))) discard = t;
+                }
+            }
+            if(!discard) discard = p.hand[Math.floor(Math.random() * p.hand.length)];
+            
+            p.hand = p.hand.filter(t => t !== discard);
+            p.discards.push(discard);
+            log(`🤖 ${p.name} discards ${getTileText(discard)}`);
+            checkRobotWin(p);
+        }
+        
+        function checkRobotWin(p) {
+            if(p.checkWin()) {
+                log(`🏆 ${p.name} WINS with ${p.tai} tai!`);
+                game.gameOver = true;
+                document.getElementById('status').innerHTML = `${p.name} WINS!`;
+            }
         }
         
         function nextTurn() {
-            // Fake claims (10% chance pung)
-            if(Math.random()<0.1) { log('Robot pungs!'); return; }
+            if(game.gameOver) return;
             
-            game.currentPlayer = (game.currentPlayer+1)%4;
-            updateDisplay();
-            
-            if(game.players[game.currentPlayer].isRobot) {
-                setTimeout(robotTurn, 500);
-                setTimeout(nextTurn, 1000);
-            } else {
-                log(`Your turn! (${game.players[game.currentPlayer].name}) Click to discard.`);
+            // Draw phase (simplified)
+            let current = game.players[game.currentPlayer];
+            if(game.wall.length > 0) {
+                let draw = game.wall.shift();
+                if(!BONUS.includes(draw) || current.bonus.length < 4) {
+                    current.hand.push(draw);
+                    log(`${current.name} draws tile`);
+                    current.sortHand();
+                }
             }
             
-            // Check win (dummy: <14 tiles + bonus)
-            if(game.players[game.currentPlayer].hand.length < 14 && game.players[game.currentPlayer].bonus.length) {
-                log(`${game.players[game.currentPlayer].name} WINS! (5+ tai)`);
+            // Check self-draw win
+            if(current.checkWin()) {
+                log(`🏆 ${current.name} self-draws WIN with ${current.tai} tai!`);
                 game.gameOver = true;
+                document.getElementById('status').innerHTML = `${current.name} WINS!`;
+                return;
+            }
+            
+            // Claim chance (20% pung, 10% chow from previous)
+            if(game.currentPlayer !== 0 && Math.random() < 0.2) {
+                log(`🀀 ${current.name} PUNGS discard!`);
+                current.melds.push(['e','e','e']); // Fake pung
+                return;
+            }
+            
+            // Normal discard
+            if(current.isRobot) {
+                setTimeout(() => {
+                    robotTurn();
+                    setTimeout(nextTurn, 1000);
+                }, 500);
+            } else {
+                game.currentPlayer = 0;
+                updateDisplay();
+                document.getElementById('status').innerHTML = `Your turn - Click tile twice to discard`;
+                log('🎯 Your turn!');
             }
         }
         
         function autoPlay() {
-            if(game.currentPlayer===0) {
-                let tile = game.players[0].hand[Math.floor(game.rand()*game.players[0].hand.length)];
+            if(game.currentPlayer === 0 && !game.selectedTile) {
+                let tile = game.players[0].hand[Math.floor(Math.random() * game.players[0].hand.length)];
                 selectTile(tile, 0);
             }
+        }
+        
+        function showAllHands() {
+            updateDisplay(true);
+            log('👁 All hands visible');
         }
         
         function log(msg) {
@@ -143,7 +262,8 @@
             document.getElementById('log').scrollTop = 9999;
         }
         
-        newGame(); // Start first game
+        // Start game
+        newGame();
     </script>
 </body>
 </html>
