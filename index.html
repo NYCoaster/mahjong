@@ -1,275 +1,321 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Taiwanese Mahjong - Premium</title>
-    <style>
-        :root {
-            --table-green: #1a4a33;
-            --tile-ivory: #fffffa;
-            --tile-back: #006633;
-            --tile-shadow: rgba(0,0,0,0.3);
-        }
-
-        body {
-            background-color: var(--table-green);
-            background-image: radial-gradient(circle, #2e8b57 0%, #1a4a33 100%);
-            font-family: "Microsoft JhengHei", "Heiti TC", sans-serif;
-            color: white;
-            margin: 0;
-            display: flex;
-            justify-content: center;
-            height: 100vh;
-            overflow: hidden;
-        }
-
-        .game-container {
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            align-items: center;
-            width: 95%;
-            max-width: 1100px;
-            padding: 15px;
-            height: 98vh;
-        }
-
-        /* --- INFO PANEL --- */
-        .info-panel {
-            text-align: center;
-            background: rgba(0,0,0,0.4);
-            padding: 10px 30px;
-            border-radius: 50px;
-            border: 1px solid rgba(255,255,255,0.1);
-            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-        }
-
-        h1 { margin: 0; font-size: 1.2rem; color: #ffd700; text-transform: uppercase; letter-spacing: 2px; }
-        #status { font-weight: 300; color: #ddd; margin: 5px 0; }
-
-        button {
-            padding: 5px 15px;
-            cursor: pointer;
-            background: linear-gradient(#eee, #ccc);
-            border: 1px solid #999;
-            border-radius: 3px;
-            font-weight: bold;
-            transition: all 0.2s;
-        }
-        button:hover { background: #fff; transform: scale(1.05); }
-
-        /* --- TILE DESIGN --- */
-        .tile {
-            position: relative;
-            width: 42px;
-            height: 58px;
-            background: var(--tile-ivory);
-            border-radius: 4px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 28px;
-            font-weight: bold;
-            cursor: pointer;
-            user-select: none;
-
-            /* The 3D effect: White face, Green back */
-            border: 1px solid #ddd;
-            border-bottom: 5px solid #bbb;
-            border-right: 3px solid #ccc;
-            box-shadow: 4px 4px 8px var(--tile-shadow);
-            transition: transform 0.1s, margin 0.2s;
-        }
-
-        /* Tile Back (for opponent) */
-        .opponent-hand .tile {
-            background: var(--tile-back);
-            background-image: linear-gradient(135deg, #007744 25%, #005522 100%);
-            border: 1px solid #004411;
-            border-bottom: 5px solid #003311;
-            border-right: 3px solid #004411;
-        }
-
-        /* Suit Colors - Traditional Palette */
-        .tile[data-suit="wan"] { color: #cc0000; }  /* Deep Red */
-        .tile[data-suit="tong"] { color: #1a4fa0; } /* Royal Blue */
-        .tile[data-suit="tiao"] { color: #1a8033; } /* Emerald Green */
-        .tile[data-suit="word"] { color: #222; }    /* Charcoal */
-        .tile[data-val="red"] { color: #ff0000; }
-        .tile[data-val="green"] { color: #00aa00; }
-
-        /* Interaction */
-        .player-hand .tile:hover {
-            transform: translateY(-12px);
-            z-index: 10;
-        }
-
-        .drawn-tile {
-            margin-left: 15px !important;
-            border: 2px solid gold !important;
-        }
-
-        /* --- LAYOUTS --- */
-        .hand {
-            display: flex;
-            justify-content: center;
-            align-items: flex-end;
-            gap: 2px;
-            padding: 15px;
-            width: 100%;
-        }
-
-        .table-center {
-            flex-grow: 1;
-            width: 100%;
-            background: rgba(0,0,0,0.1);
-            border-radius: 100px / 20px;
-            box-shadow: inset 0 0 50px rgba(0,0,0,0.3);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
-        }
-
-        .discard-pile {
-            display: grid;
-            grid-template-columns: repeat(10, 1fr);
-            gap: 5px;
-            max-width: 500px;
-        }
-
-        .discard-pile .tile {
-            width: 30px;
-            height: 42px;
-            font-size: 20px;
-            border-bottom-width: 3px;
-            border-right-width: 2px;
-            cursor: default;
-        }
-    </style>
+ <meta charset="UTF-8">
+ <meta name="viewport" content="width=device-width, initial-scale=1.0">
+ <title>Taiwanese Mahjong - Premium</title>
+ <style>
+ :root {
+ --table-green: #1a4a33;
+ --tile-ivory: #fffffa;
+ --tile-back: #006633;
+ --tile-shadow: rgba(0,0,0,0.3);
+ }
+ body {
+ background-color: var(--table-green);
+ background-image: radial-gradient(circle, #2e8b57 0%, #1a4a33 100%);
+ font-family: "Microsoft JhengHei", "Heiti TC", sans-serif;
+ color: white;
+ margin: 0;
+ display: flex;
+ justify-content: center;
+ height: 100vh;
+ overflow: hidden;
+ }
+ .game-container {
+ display: flex;
+ flex-direction: column;
+ justify-content: space-between;
+ align-items: center;
+ width: 95%;
+ max-width: 1100px;
+ padding: 15px;
+ height: 98vh;
+ position: relative; /* Add position relative for call buttons positioning */
+ }
+ /* --- INFO PANEL --- */
+ .info-panel {
+ text-align: center;
+ background: rgba(0,0,0,0.4);
+ padding: 10px 30px;
+ border-radius: 50px;
+ border: 1px solid rgba(255,255,255,0.1);
+ box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+ }
+ h1 { margin: 0; font-size: 1.2rem; color: #ffd700; text-transform: uppercase; letter-spacing: 2px; }
+ #status { font-weight: 300; color: #ddd; margin: 5px 0; }
+ button {
+ padding: 5px 15px;
+ cursor: pointer;
+ background: linear-gradient(#eee, #ccc);
+ border: 1px solid #999;
+ border-radius: 3px;
+ font-weight: bold;
+ transition: all 0.2s;
+ }
+ button:hover { background: #fff; transform: scale(1.05); }
+ /* --- TILE DESIGN --- */
+ .tile {
+ position: relative;
+ width: 42px;
+ height: 58px;
+ background: var(--tile-ivory);
+ border-radius: 4px;
+ display: flex;
+ justify-content: center;
+ align-items: center;
+ font-size: 28px;
+ font-weight: bold;
+ cursor: pointer;
+ user-select: none;
+ /* The 3D effect: White face, Green back */
+ border: 1px solid #ddd;
+ border-bottom: 5px solid #bbb;
+ border-right: 3px solid #ccc;
+ box-shadow: 4px 4px 8px var(--tile-shadow);
+ transition: transform 0.1s, margin 0.2s;
+ }
+ /* Tile Back (for opponent) */
+ .opponent-hand .tile {
+ background: var(--tile-back);
+ background-image: linear-gradient(135deg, #007744 25%, #005522 100%);
+ border: 1px solid #004411;
+ border-bottom: 5px solid #003311;
+ border-right: 3px solid #004411;
+ }
+ /* Suit Colors - Traditional Palette */
+ .tile[data-suit="wan"] { color: #cc0000; } /* Deep Red */
+ .tile[data-suit="tong"] { color: #1a4fa0; } /* Royal Blue */
+ .tile[data-suit="tiao"] { color: #1a8033; } /* Emerald Green */
+ .tile[data-suit="word"] { color: #222; } /* Charcoal */
+ .tile[data-val="red"] { color: #ff0000; }
+ .tile[data-val="green"] { color: #00aa00; }
+ /* Interaction */
+ .player-hand .tile:hover {
+ transform: translateY(-12px);
+ z-index: 10;
+ }
+ .drawn-tile {
+ margin-left: 15px !important;
+ border: 2px solid gold !important;
+ }
+ /* --- LAYOUTS --- */
+ .hand {
+ display: flex;
+ justify-content: center;
+ align-items: flex-end;
+ gap: 2px;
+ padding: 15px;
+ width: 100%;
+ }
+ .table-center {
+ flex-grow: 1;
+ width: 100%;
+ background: rgba(0,0,0,0.1);
+ border-radius: 100px / 20px;
+ box-shadow: inset 0 0 50px rgba(0,0,0,0.3);
+ display: flex;
+ justify-content: center;
+ align-items: center;
+ padding: 20px;
+ }
+ .discard-pile {
+ display: grid;
+ grid-template-columns: repeat(10, 1fr);
+ gap: 5px;
+ max-width: 500px;
+ }
+ .discard-pile .tile {
+ width: 30px;
+ height: 42px;
+ font-size: 20px;
+ border-bottom-width: 3px;
+ border-right-width: 2px;
+ cursor: default;
+ }
+ /* --- CALL BUTTONS PANEL --- */
+ .call-buttons {
+    position: absolute;
+    bottom: 120px; /* Position above the player's hand */
+    display: flex;
+    gap: 10px;
+    padding: 10px;
+    background: rgba(0, 0, 0, 0.7);
+    border-radius: 8px;
+    z-index: 20;
+}
+.call-buttons button {
+    padding: 10px 20px;
+    font-size: 1rem;
+}
+ </style>
 </head>
 <body>
+ <div class="game-container">
+  <div class="info-panel">
+   <h1>Taiwanese Mahjong</h1>
+   <div id="status">Initializing...</div>
+   <button onclick="initGame()">New Game</button>
+  </div>
+  <div class="hand opponent-hand" id="opponent-hand"></div>
+  <div class="table-center">
+   <div class="discard-pile" id="discard-pile"></div>
+  </div>
+  <div class="hand player-hand" id="player-hand"></div>
 
-    <div class="game-container">
-        <div class="info-panel">
-            <h1>Taiwanese Mahjong</h1>
-            <div id="status">Initializing...</div>
-            <button onclick="initGame()">New Game</button>
-        </div>
+  <!-- --- CALL BUTTONS PANEL (New HTML) --- -->
+  <div class="call-buttons" id="call-buttons" style="display: none;">
+      <button onclick="handleChow('player')">Chow (吃)</button>
+      <button onclick="handlePung('player')">Pung (碰)</button>
+      <button onclick="handleKong('player')">Kong (杠)</button>
+      <button onclick="passTurn()">Pass</button>
+  </div>
+ </div>
+ <script>
+  const SUITS = ['wan', 'tong', 'tiao'];
+  const WORDS = ['east', 'south', 'west', 'north', 'red', 'green', 'white'];
+  const HAND_SIZE = 16;
+  let deck = [], playerHand = [], opponentHand = [], discardPile = [];
+  let isPlayerTurn = true;
+  // New variables for Pung/Chow/Kong logic
+  let playerExposedSets = [];
+  let opponentExposedSets = [];
+  let lastDiscardedTile = null;
+  let activePlayer = 'player';
 
-        <div class="hand opponent-hand" id="opponent-hand"></div>
+  function initGame() {
+   deck = [];
+   SUITS.forEach(s => { for(let i=1; i<=9; i++) for(let c=0; c<4; c++) deck.push({s, v:i}); });
+   WORDS.forEach(v => { for(let c=0; c<4; c++) deck.push({s:'word', v}); });
+   for(let i = deck.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [deck[i], deck[j]] = [deck[j], deck[i]];
+   }
+   playerHand = deck.splice(0, HAND_SIZE);
+   opponentHand = deck.splice(0, HAND_SIZE);
+   sortHand(playerHand);
+   drawTile('player');
+   toggleCallButtons(false); // Ensure buttons are hidden at start
+  }
+  function drawTile(who) {
+   if (deck.length === 0) return updateStatus("Draw Game!");
+   const tile = deck.pop();
+   if (who === 'player') {
+    playerHand.push(tile);
+    isPlayerTurn = true;
+    updateStatus("Your turn: Discard a tile");
+   } else {
+    opponentHand.push(tile);
+    updateStatus("Opponent is thinking...");
+    setTimeout(aiDiscard, 1000);
+   }
+   render();
+  }
 
-        <div class="table-center">
-            <div class="discard-pile" id="discard-pile"></div>
-        </div>
+  // Modified playerDiscard to check for calls
+  function playerDiscard(idx) {
+    if (!isPlayerTurn) return;
+    // Store the discarded tile object
+    const tile = playerHand.splice(idx, 1)[0];
+    discardPile.push(tile);
+    lastDiscardedTile = tile; // Update last discarded tile
+    isPlayerTurn = false;
+    sortHand(playerHand);
+    render();
+    checkForCalls('opponent'); // Check if opponent can call Pung/Kong/Chow
+  }
 
-        <div class="hand player-hand" id="player-hand"></div>
-    </div>
+  // Modified aiDiscard to check for calls
+  function aiDiscard() {
+    const idx = Math.floor(Math.random() * opponentHand.length);
+    const tile = opponentHand.splice(idx, 1)[0];
+    discardPile.push(tile);
+    lastDiscardedTile = tile; // Update last discarded tile
+    render();
+    checkForCalls('player'); // Check if player can call Pung/Kong/Chow
+  }
 
-    <script>
-        const SUITS = ['wan', 'tong', 'tiao'];
-        const WORDS = ['east', 'south', 'west', 'north', 'red', 'green', 'white'];
-        const HAND_SIZE = 16;
+  function sortHand(hand) {
+   hand.sort((a,b) => (a.s + a.v).localeCompare(b.s + b.v));
+  }
+  function getDisplay(t) {
+   if(t.s === 'wan') return t.v + '🀇';
+   if(t.s === 'tong') return t.v + '🀠';
+   if(t.s === 'tiao') return t.v + '🀒';
+   return {'east':'東','south':'南','west':'西','north':'北','red':'中','green':'發','white':'白'}[t.v];
+  }
+  function render() {
+   const pDiv = document.getElementById('player-hand');
+   const oDiv = document.getElementById('opponent-hand');
+   const dDiv = document.getElementById('discard-pile');
+   pDiv.innerHTML = '';
+   playerHand.forEach((t, i) => {
+    const el = document.createElement('div');
+    el.className = 'tile';
+    if (i === playerHand.length - 1 && isPlayerTurn)
+    el.className += ' drawn-tile';
+    el.dataset.suit = t.s;
+    el.dataset.val = t.v;
+    el.innerText = getDisplay(t);
+    el.onclick = () => playerDiscard(i);
+    pDiv.appendChild(el);
+   });
+   oDiv.innerHTML = '';
+   opponentHand.forEach(() => {
+    const el = document.createElement('div');
+    el.className = 'tile';
+    oDiv.appendChild(el);
+   });
+   dDiv.innerHTML = '';
+   discardPile.forEach(t => {
+    const el = document.createElement('div');
+    el.className = 'tile';
+    el.dataset.suit = t.s;
+    el.dataset.val = t.v;
+    el.innerText = getDisplay(t);
+    dDiv.appendChild(el);
+   });
+  }
+  function updateStatus(msg) {
+   document.getElementById('status').innerText = msg; }
 
-        let deck = [], playerHand = [], opponentHand = [], discardPile = [], isPlayerTurn = true;
+  // New JS Functions for Pung/Chow/Kong Calls
 
-        function initGame() {
-            deck = [];
-            SUITS.forEach(s => { for(let i=1; i<=9; i++) for(let c=0; c<4; c++) deck.push({s, v:i}); });
-            WORDS.forEach(v => { for(let c=0; c<4; c++) deck.push({s:'word', v}); });
+  function toggleCallButtons(show) {
+      const buttons = document.getElementById('call-buttons');
+      if (show) {
+          buttons.style.display = 'flex';
+          updateStatus("Call Pung, Chow, Kong, or Pass");
+      } else {
+          buttons.style.display = 'none';
+      }
+  }
 
-            for(let i = deck.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [deck[i], deck[j]] = [deck[j], deck[i]];
-            }
+  function passTurn() {
+      toggleCallButtons(false);
+      // Resume the game loop by drawing a tile for the next player in sequence
+      setTimeout(() => drawTile('opponent'), 800);
+      lastDiscardedTile = null;
+  }
 
-            playerHand = deck.splice(0, HAND_SIZE);
-            opponentHand = deck.splice(0, HAND_SIZE);
+  function checkForCalls(caller) {
+      if (caller === 'player') {
+          // You would implement checks here to see IF Pung/Chow/Kong is valid first
+          toggleCallButtons(true); // Show the buttons for the player to decide
+      } else {
+          // AI logic: AI currently always passes calls and the game proceeds
+          setTimeout(() => drawTile('player'), 500);
+          lastDiscardedTile = null;
+      }
+  }
 
-            sortHand(playerHand);
-            drawTile('player');
-        }
+  // Placeholder functions for the actual Pung, Chow, Kong logic
+  function handlePung(caller) { console.log(caller + " called Pung! (Logic TBD)"); toggleCallButtons(false); /* Add real logic here */ }
+  function handleChow(caller) { console.log(caller + " called Chow! (Logic TBD)"); toggleCallButtons(false); /* Add real logic here */ }
+  function handleKong(caller) { console.log(caller + " called Kong! (Logic TBD)"); toggleCallButtons(false); /* Add real logic here */ }
 
-        function drawTile(who) {
-            if (deck.length === 0) return updateStatus("Draw Game!");
-            const tile = deck.pop();
-            if (who === 'player') {
-                playerHand.push(tile);
-                isPlayerTurn = true;
-                updateStatus("Your turn: Discard a tile");
-            } else {
-                opponentHand.push(tile);
-                updateStatus("Opponent is thinking...");
-                setTimeout(aiDiscard, 1000);
-            }
-            render();
-        }
 
-        function playerDiscard(idx) {
-            if (!isPlayerTurn) return;
-            discardPile.push(playerHand.splice(idx, 1)[0]);
-            isPlayerTurn = false;
-            sortHand(playerHand);
-            render();
-            setTimeout(() => drawTile('opponent'), 800);
-        }
-
-        function aiDiscard() {
-            discardPile.push(opponentHand.splice(Math.floor(Math.random()*opponentHand.length), 1)[0]);
-            render();
-            setTimeout(() => drawTile('player'), 500);
-        }
-
-        function sortHand(hand) {
-            hand.sort((a,b) => (a.s + a.v).localeCompare(b.s + b.v));
-        }
-
-        function getDisplay(t) {
-            if(t.s === 'wan') return t.v + '🀇';
-            if(t.s === 'tong') return t.v + '🀠';
-            if(t.s === 'tiao') return t.v + '🀒';
-            return {'east':'東','south':'南','west':'西','north':'北','red':'中','green':'發','white':'白'}[t.v];
-        }
-
-        function render() {
-            const pDiv = document.getElementById('player-hand');
-            const oDiv = document.getElementById('opponent-hand');
-            const dDiv = document.getElementById('discard-pile');
-
-            pDiv.innerHTML = '';
-            playerHand.forEach((t, i) => {
-                const el = document.createElement('div');
-                el.className = 'tile';
-                if (i === playerHand.length - 1 && isPlayerTurn) el.className += ' drawn-tile';
-                el.dataset.suit = t.s;
-                el.dataset.val = t.v;
-                el.innerText = getDisplay(t);
-                el.onclick = () => playerDiscard(i);
-                pDiv.appendChild(el);
-            });
-
-            oDiv.innerHTML = '';
-            opponentHand.forEach(() => {
-                const el = document.createElement('div');
-                el.className = 'tile';
-                oDiv.appendChild(el);
-            });
-
-            dDiv.innerHTML = '';
-            discardPile.forEach(t => {
-                const el = document.createElement('div');
-                el.className = 'tile';
-                el.dataset.suit = t.s;
-                el.dataset.val = t.v;
-                el.innerText = getDisplay(t);
-                dDiv.appendChild(el);
-            });
-        }
-
-        function updateStatus(msg) { document.getElementById('status').innerText = msg; }
-
-        initGame();
-    </script>
+  initGame();
+ </script>
 </body>
 </html>
