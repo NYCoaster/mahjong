@@ -3,7 +3,7 @@
 <head>
  <meta charset="UTF-8">
  <meta name="viewport" content="width=device-width, initial-scale=1.0">
- <title>Taiwanese Mahjong - Premium (Updated)</title>
+ <title>Taiwanese Mahjong - Premium (Updated Kong)</title>
  <style>
  :root {
  --table-green: #1a4a33;
@@ -61,6 +61,9 @@
  /* Call buttons from previous step */
  .call-buttons { position: absolute; bottom: 120px; display: flex; gap: 10px; padding: 10px; background: rgba(0, 0, 0, 0.7); border-radius: 8px; z-index: 20; }
  .call-buttons button { padding: 10px 20px; font-size: 1rem; }
+ /* Exposed sets area style */
+ .exposed-sets { display: flex; gap: 10px; margin-bottom: 10px; }
+ .exposed-sets .tile { cursor: default; }
  </style>
 </head>
 <body>
@@ -71,9 +74,11 @@
    <button onclick="initGame()">New Game</button>
   </div>
   <div class="hand opponent-hand" id="opponent-hand"></div>
+  <div class="exposed-sets" id="opponent-exposed-sets"></div>
   <div class="table-center">
    <div class="discard-pile" id="discard-pile"></div>
   </div>
+  <div class="exposed-sets" id="player-exposed-sets"></div>
   <div class="hand player-hand" id="player-hand"></div>
 
   <!-- --- CALL BUTTONS PANEL --- -->
@@ -91,7 +96,6 @@
   const HAND_SIZE = 16;
   let deck = [], playerHand = [], opponentHand = [], discardPile = [];
   let isPlayerTurn = true;
-  // New variables for Pung/Chow/Kong logic
   let playerExposedSets = [];
   let opponentExposedSets = [];
   let lastDiscardedTile = null;
@@ -109,7 +113,10 @@
    opponentHand = deck.splice(0, HAND_SIZE);
    sortHand(playerHand);
    drawTile('player');
-   toggleCallButtons([]); // Ensure buttons are hidden at start
+   toggleCallButtons([]);
+   playerExposedSets = [];
+   opponentExposedSets = [];
+   render();
   }
   function drawTile(who) {
    if (deck.length === 0) return updateStatus("Draw Game!");
@@ -126,26 +133,24 @@
    render();
   }
 
-  // Modified playerDiscard to check for calls for the opponent
   function playerDiscard(idx) {
     if (!isPlayerTurn) return;
-    const tile = playerHand.splice(idx, 1)[0]; // Store the single tile object
+    const tile = playerHand.splice(idx, 1);
     discardPile.push(tile);
-    lastDiscardedTile = tile; // Update last discarded tile
+    lastDiscardedTile = tile;
     isPlayerTurn = false;
     sortHand(playerHand);
     render();
-    checkForCalls('opponent'); // Check if opponent can call (AI logic is simple/passes for now)
+    checkForCalls('opponent');
   }
 
-  // Modified aiDiscard to check for calls for the player
   function aiDiscard() {
     const idx = Math.floor(Math.random() * opponentHand.length);
-    const tile = opponentHand.splice(idx, 1)[0]; // Store the single tile object
+    const tile = opponentHand.splice(idx, 1);
     discardPile.push(tile);
-    lastDiscardedTile = tile; // Update last discarded tile
+    lastDiscardedTile = tile;
     render();
-    checkForCalls('player'); // Check if player can call
+    checkForCalls('player');
   }
 
   function sortHand(hand) {
@@ -161,10 +166,12 @@
    const pDiv = document.getElementById('player-hand');
    const oDiv = document.getElementById('opponent-hand');
    const dDiv = document.getElementById('discard-pile');
+   const pESDiv = document.getElementById('player-exposed-sets');
+   const oESDiv = document.getElementById('opponent-exposed-sets');
+   
    pDiv.innerHTML = '';
    playerHand.forEach((t, i) => {
-    const el = document.createElement('div');
-    el.className = 'tile';
+    const el = document.createElement('div'); el.className = 'tile';
     if (i === playerHand.length - 1 && isPlayerTurn) el.className += ' drawn-tile';
     el.dataset.suit = t.s; el.dataset.val = t.v; el.innerText = getDisplay(t);
     el.onclick = () => playerDiscard(i);
@@ -180,99 +187,126 @@
     el.dataset.suit = t.s; el.dataset.val = t.v; el.innerText = getDisplay(t);
     dDiv.appendChild(el);
    });
+
+   pESDiv.innerHTML = '';
+   playerExposedSets.flat().forEach(t => {
+        const el = document.createElement('div'); el.className = 'tile';
+        el.dataset.suit = t.s; el.dataset.val = t.v; el.innerText = getDisplay(t);
+        pESDiv.appendChild(el);
+   });
+   oESDiv.innerHTML = '';
+   opponentExposedSets.flat().forEach(t => {
+        const el = document.createElement('div'); el.className = 'tile';
+        el.dataset.suit = t.s; el.dataset.val = t.v; el.innerText = getDisplay(t);
+        oESDiv.appendChild(el);
+   });
   }
   function updateStatus(msg) { document.getElementById('status').innerText = msg; }
-
-  // New JS Functions for Pung/Chow/Kong/Win Calls
 
   function toggleCallButtons(options) {
       const buttonsDiv = document.getElementById('call-buttons');
       buttonsDiv.style.display = options.length > 0 ? 'flex' : 'none';
-
-      // Hide all specific call buttons initially
       document.querySelector('[onclick*="handleChow"]').style.display = 'none';
       document.querySelector('[onclick*="handlePung"]').style.display = 'none';
       document.querySelector('[onclick*="handleKong"]').style.display = 'none';
       document.querySelector('[onclick*="handleWin"]').style.display = 'none';
-      document.querySelector('[onclick*="passTurn"]').style.display = 'inline-block'; // Always show pass
-
-      // Show only the buttons that are in the options list
+      document.querySelector('[onclick*="passTurn"]').style.display = 'inline-block';
       if (options.includes('chow')) document.querySelector('[onclick*="handleChow"]').style.display = 'inline-block';
       if (options.includes('pung')) document.querySelector('[onclick*="handlePung"]').style.display = 'inline-block';
       if (options.includes('kong')) document.querySelector('[onclick*="handleKong"]').style.display = 'inline-block';
       if (options.includes('win')) document.querySelector('[onclick*="handleWin"]').style.display = 'inline-block';
-      
-      if (options.length > 0) {
-          updateStatus("You can make a call or Pass");
-      }
+      if (options.length > 0) { updateStatus("You can make a call or Pass"); }
   }
 
   function checkForCalls(caller) {
       if (caller === 'player' && lastDiscardedTile) {
           let possibleCalls = [];
           const tile = lastDiscardedTile;
-
-          // 1. Check for Pung (3 of a kind)
           const pungCount = playerHand.filter(t => t.s === tile.s && t.v === tile.v).length;
-          if (pungCount >= 2) {
-              possibleCalls.push('pung');
-          }
-
-          // 2. Check for Kong (4 of a kind)
-          if (pungCount >= 3) {
-              possibleCalls.push('kong');
-          }
-
-          // 3. Check for Chow (needs complex sequence check function)
-          // For simplicity in this file, we manually add the option
-          // possibleCalls.push('chow');
-
-          // 4. Check for Win (needs complex win condition function)
-          // possibleCalls.push('win');
-
+          if (pungCount >= 2) { possibleCalls.push('pung'); }
+          if (pungCount >= 3) { possibleCalls.push('kong'); } // Kong possible if 3 in hand + 1 discarded
           toggleCallButtons(possibleCalls); 
-          
-          if (possibleCalls.length === 0) {
-             passTurn();
-          }
-
+          if (possibleCalls.length === 0) { passTurn(); }
       } else {
-          // AI logic for opponent always passes for now
-          passTurn();
+          passTurn(); // AI always passes for now
       }
   }
   
   function passTurn() {
       toggleCallButtons([]);
-      // Resume the 2-player game loop by drawing a tile for the opponent
       setTimeout(() => drawTile('opponent'), 800);
       lastDiscardedTile = null;
   }
 
-  // Placeholder functions for the actual Pung, Chow, Kong, and Win logic
   function handlePung(caller) { 
-      console.log(caller + " called Pung! (Logic TBD)"); 
-      updateStatus("You called Pung. Please discard a tile.");
+      if (caller !== 'player' || !lastDiscardedTile) return;
+
+      const tileToMatch = lastDiscardedTile;
+      let tilesForPung = [tileToMatch];
+      let removedCount = 0;
+      for (let i = playerHand.length - 1; i >= 0 && removedCount < 2; i--) {
+          if (playerHand[i].s === tileToMatch.s && playerHand[i].v === tileToMatch.v) {
+              tilesForPung.push(playerHand.splice(i, 1)[0]); // Get the tile object itself
+              removedCount++;
+          }
+      }
+      
+      playerExposedSets.push(tilesForPung);
+      lastDiscardedTile = null;
+      discardPile.pop(); // Remove the tile from the discard pile array
+      sortHand(playerHand);
+      
       toggleCallButtons([]); 
-      // Add logic here to move tiles, then set isPlayerTurn=true
+      isPlayerTurn = true;
+      updateStatus("You called Pung. Please discard a tile.");
+      render();
   }
+
+  // New function for the Kong replacement tile draw
+  function drawReplacementTile(who) {
+      if (deck.length === 0) return updateStatus("Draw Game!"); // Should draw from end of deck ("wall")
+      const tile = deck.pop();
+      if (who === 'player') {
+          playerHand.push(tile);
+          isPlayerTurn = true; // Player gets to discard again after Kong
+          updateStatus("Drew replacement tile. Please discard a tile.");
+      }
+      render();
+  }
+
+  function handleKong(caller) {
+    if (caller !== 'player' || !lastDiscardedTile) return;
+
+    const tileToMatch = lastDiscardedTile;
+    let tilesForKong = [tileToMatch];
+    let removedCount = 0;
+    for (let i = playerHand.length - 1; i >= 0 && removedCount < 3; i--) {
+        if (playerHand[i].s === tileToMatch.s && playerHand[i].v === tileToMatch.v) {
+            tilesForKong.push(playerHand.splice(i, 1)[0]); // Get the tile object
+            removedCount++;
+        }
+    }
+
+    playerExposedSets.push(tilesForKong);
+    lastDiscardedTile = null;
+    discardPile.pop(); // Remove the tile from the discard pile array
+    sortHand(playerHand);
+
+    toggleCallButtons([]);
+    // After calling Kong, the player draws a replacement tile (drawReplacementTile handles turn status)
+    drawReplacementTile('player');
+  }
+
+
   function handleChow(caller) { 
       console.log(caller + " called Chow! (Logic TBD)"); 
       updateStatus("You called Chow. Please discard a tile.");
       toggleCallButtons([]); 
-      // Add logic here to move tiles, then set isPlayerTurn=true
-  }
-  function handleKong(caller) { 
-      console.log(caller + " called Kong! (Logic TBD)"); 
-      updateStatus("You called Kong. Draw a replacement tile from the wall.");
-      toggleCallButtons([]); 
-      // Add logic here to move tiles and draw replacement tile
   }
   function handleWin(caller) {
       console.log(caller + " declared Mahjong and won!");
       updateStatus("Mahjong! " + caller + " wins the game!");
       toggleCallButtons([]);
-      // Add game end logic here
   }
 
 
