@@ -42,9 +42,6 @@
  .call-buttons button { padding: 10px 20px; font-size: 1rem; }
  .exposed-sets { display: flex; gap: 10px; margin-bottom: 10px; }
  .exposed-sets .tile { cursor: default; }
- /* Concealed Kong style: outer tiles face down */
- .exposed-sets .concealed-kong-outer { color: transparent !important; background: var(--tile-back) !important; }
-
  </style>
 </head>
 <body>
@@ -62,7 +59,7 @@
   <div class="hand player-hand" id="player-hand"></div>
   <div class="exposed-sets" id="player-exposed-sets"></div>
 
-  <!-- Updated Call Buttons Panel (includes Concealed Kong Button) -->
+
   <div class="call-buttons" id="call-buttons" style="display: none;">
       <button onclick="handleChow('player')">Chow (吃)</button>
       <button onclick="handlePung('player')">Pung (碰)</button>
@@ -111,14 +108,16 @@
 
   function playerDiscard(idx) {
     if (!isPlayerTurn || playerHand.length % 3 !== 2) return; 
-    const tile = playerHand.splice(idx, 1); discardPile.push(tile); lastDiscardedTile = tile;
+    const tile = playerHand.splice(idx, 1)[0]; // FIX: Get the single tile object
+    discardPile.push(tile); lastDiscardedTile = tile;
     isPlayerTurn = false; sortHand(playerHand); render();
     checkForCalls('opponent'); 
   }
 
   function aiDiscard() {
     const idx = Math.floor(Math.random() * opponentHand.length);
-    const tile = opponentHand.splice(idx, 1); discardPile.push(tile); lastDiscardedTile = tile;
+    const tile = opponentHand.splice(idx, 1)[0]; // FIX: Get the single tile object
+    discardPile.push(tile); lastDiscardedTile = tile;
     render();
     checkForCalls('player');
   }
@@ -135,13 +134,7 @@
    playerHand.forEach((t, i) => { const el = document.createElement('div'); el.className = 'tile'; if (i === playerHand.length - 1 && isPlayerTurn) el.className += ' drawn-tile'; el.dataset.suit = t.s; el.dataset.val = t.v; el.innerText = getDisplay(t); el.onclick = () => playerDiscard(i); document.getElementById('player-hand').appendChild(el); });
    opponentHand.forEach(() => { const el = document.createElement('div'); el.className = 'tile'; document.getElementById('opponent-hand').appendChild(el); });
    discardPile.forEach(t => { const el = document.createElement('div'); el.className = 'tile'; el.dataset.suit = t.s; el.dataset.val = t.v; el.innerText = getDisplay(t); document.getElementById('discard-pile').appendChild(el); });
-   playerExposedSets.flat().forEach(t => { 
-        const el = document.createElement('div'); el.className = 'tile';
-        // Add concealed kong class if needed for rendering face down tiles
-        // This is complex to track which sets are concealed vs exposed after the fact
-        el.dataset.suit = t.s; el.dataset.val = t.v; el.innerText = getDisplay(t); 
-        document.getElementById('player-exposed-sets').appendChild(el); 
-    });
+   playerExposedSets.flat().forEach(t => { const el = document.createElement('div'); el.className = 'tile'; el.dataset.suit = t.s; el.dataset.val = t.v; el.innerText = getDisplay(t); document.getElementById('player-exposed-sets').appendChild(el); });
    opponentExposedSets.flat().forEach(t => { const el = document.createElement('div'); el.className = 'tile'; el.dataset.suit = t.s; el.dataset.val = t.v; el.innerText = getDisplay(t); document.getElementById('opponent-exposed-sets').appendChild(el); });
   }
   function updateStatus(msg) { document.getElementById('status').innerText = msg; }
@@ -153,7 +146,6 @@
       document.querySelector('[onclick*="handlePung"]').style.display = options.includes('pung') ? 'inline-block' : 'none';
       document.querySelector('[onclick*="handleKong"]').style.display = options.includes('kong') ? 'inline-block' : 'none';
       document.querySelector('[onclick*="handleWin"]').style.display = options.includes('win') ? 'inline-block' : 'none';
-      // New button for concealed kong
       document.querySelector('[onclick*="handleConcealedKong"]').style.display = options.includes('concealedKong') ? 'inline-block' : 'none';
       document.querySelector('[onclick*="passTurn"]').style.display = 'inline-block';
       if (options.length > 0) updateStatus("You can make a call or Pass");
@@ -189,24 +181,11 @@
       return false;
   }
 
-  // New function to check for a concealed kong in the hand
   function checkForConcealedKong() {
-      // Use a frequency map to count occurrences of each tile
-      const counts = {};
-      playerHand.forEach(tile => {
-          const key = tile.s + tile.v;
-          counts[key] = (counts[key] || 0) + 1;
-      });
-
-      // Check if any tile appears 4 times
+      const counts = {}; playerHand.forEach(tile => { const key = tile.s + tile.v; counts[key] = (counts[key] || 0) + 1; });
       for (const key in counts) {
-          if (counts[key] === 4) {
-              // Found a potential concealed kong
-              toggleCallButtons(['concealedKong']);
-              return; 
-          }
+          if (counts[key] === 4) { toggleCallButtons(['concealedKong']); return; }
       }
-      // If loop finishes and no 4-of-a-kind found, just let the turn continue (discard)
       updateStatus("Your turn: Discard a tile");
   }
 
@@ -219,19 +198,13 @@
           if (lastDiscardedTile) playerHand.pop(); 
 
           if (isSelfDraw) {
-              // After a self-draw, check for Win or Concealed Kong first
               if (possibleCalls.includes('win')) { toggleCallButtons(['win']); return; }
-              checkForConcealedKong(); // Check for concealed kong if no win
-              // The check function handles the status message if no kong found
+              checkForConcealedKong();
           } else if (lastDiscardedTile) {
-              // On opponent discard, check normal calls (Win is already checked by the block above)
               const tile = lastDiscardedTile;
               const pungCount = playerHand.filter(t => t.s === tile.s && t.v === tile.v).length;
               if (pungCount >= 2) possibleCalls.push('pung'); if (pungCount >= 3) possibleCalls.push('kong');
               if (canFormChow(playerHand, tile)) { possibleCalls.push('chow'); }
-              // Add 'win' to calls if it's possible from a discarded tile
-              if (possibleCalls.includes('win')) { /* already added above */ }
-
               toggleCallButtons(possibleCalls); 
               if (possibleCalls.length === 0 && !isSelfDraw) passTurn();
           }
@@ -242,15 +215,15 @@
   
   function passTurn() {
       const tilePassed = lastDiscardedTile; lastDiscardedTile = null; toggleCallButtons([]);
-      setTimeout(() => { if (tilePassed) drawTile('opponent'); }, 800);
+      // FIX: Ensure the timeout is cleared before setting a new one
+      if (opponentTurnTimeout) clearTimeout(opponentTurnTimeout);
+      opponentTurnTimeout = setTimeout(() => { if (tilePassed) drawTile('opponent'); }, 800);
   }
 
   function handlePung(caller) { 
       if (caller !== 'player' || !lastDiscardedTile) return;
       const tileToMatch = lastDiscardedTile; let tilesForPung = [tileToMatch]; let removedCount = 0;
-      for (let i = playerHand.length - 1; i >= 0 && removedCount < 2; i--) {
-          if (playerHand[i].s === tileToMatch.s && playerHand[i].v === tileToMatch.v) { tilesForPung.push(playerHand.splice(i, 1)); removedCount++; }
-      }
+      for (let i = playerHand.length - 1; i >= 0 && removedCount < 2; i--) { if (playerHand[i].s === tileToMatch.s && playerHand[i].v === tileToMatch.v) { tilesForPung.push(playerHand.splice(i, 1)[0]); removedCount++; } }
       playerExposedSets.push(tilesForPung.flat()); lastDiscardedTile = null; discardPile.pop(); sortHand(playerHand);
       toggleCallButtons([]); isPlayerTurn = true; updateStatus("You called Pung. Please discard a tile."); render();
   }
@@ -261,11 +234,11 @@
       if (who === 'player') {
           playerHand.push(tile); isPlayerTurn = true;
           if (isWinningHand(cloneHand(playerHand))) { toggleCallButtons(['win']); return; }
-          // After replacement draw, check for concealed kongs or force discard
           checkForConcealedKong();
       } else if (who === 'opponent') {
           opponentHand.push(tile); updateStatus("Opponent drew replacement tile and is discarding...");
-          setTimeout(aiDiscard, 1000);
+          if (opponentTurnTimeout) clearTimeout(opponentTurnTimeout);
+          opponentTurnTimeout = setTimeout(aiDiscard, 1000);
       }
       render();
   }
@@ -274,33 +247,21 @@
     if (caller !== 'player' || !lastDiscardedTile) return;
     const tileToMatch = lastDiscardedTile; let tilesForKong = [tileToMatch]; let removedCount = 0;
     for (let i = playerHand.length - 1; i >= 0 && removedCount < 3; i--) {
-        if (playerHand[i].s === tileToMatch.s && playerHand[i].v === tileToMatch.v) { tilesForKong.push(playerHand.splice(i, 1)); removedCount++; }
+        if (playerHand[i].s === tileToMatch.s && playerHand[i].v === tileToMatch.v) { tilesForKong.push(playerHand.splice(i, 1)[0]); removedCount++; }
     }
     playerExposedSets.push(tilesForKong.flat()); lastDiscardedTile = null; discardPile.pop(); sortHand(playerHand); toggleCallButtons([]);
     drawReplacementTile('player');
   }
 
-  // Handle concealed kong action
   function handleConcealedKong() {
-      // Find the four-of-a-kind set (logic already exists in checkForConcealedKong)
-      const counts = {};
-      playerHand.forEach(tile => { const key = tile.s + tile.v; counts[key] = (counts[key] || 0) + 1; });
-      let kongKey = null;
-      for (const key in counts) { if (counts[key] === 4) { kongKey = key; break; } }
-      
+      const counts = {}; playerHand.forEach(tile => { const key = tile.s + tile.v; counts[key] = (counts[key] || 0) + 1; });
+      let kongKey = null; for (const key in counts) { if (counts[key] === 4) { kongKey = key; break; } }
       if (kongKey) {
           let tilesForKong = [];
-          for (let i = playerHand.length - 1; i >= 0; i--) {
-              if (playerHand[i].s + playerHand[i].v === kongKey) {
-                  tilesForKong.push(playerHand.splice(i, 1));
-              }
-          }
-          playerExposedSets.push(tilesForKong.flat());
-          toggleCallButtons([]);
-          drawReplacementTile('player'); // Draw a replacement tile
+          for (let i = playerHand.length - 1; i >= 0; i--) { if (playerHand[i].s + playerHand[i].v === kongKey) { tilesForKong.push(playerHand.splice(i, 1)[0]); } }
+          playerExposedSets.push(tilesForKong.flat()); toggleCallButtons([]); drawReplacementTile('player');
       }
   }
-
 
   function handleChow(caller) { 
       if (caller !== 'player' || !lastDiscardedTile) return;
@@ -317,15 +278,10 @@
 
   function handleWin(caller) {
       if (caller !== 'player') return;
-      const tileForWin = lastDiscardedTile;
-      if (tileForWin) playerHand.push(tileForWin);
+      const tileForWin = lastDiscardedTile; if (tileForWin) playerHand.push(tileForWin);
       if (isWinningHand(cloneHand(playerHand))) {
         updateStatus("Mahjong! " + caller + " wins the game!"); toggleCallButtons([]); isPlayerTurn = false;
-      } else { 
-        if (tileForWin) playerHand.pop(); 
-        updateStatus("Invalid win declaration."); toggleCallButtons([]); passTurn();
-      }
-      render();
+      } else { if (tileForWin) playerHand.pop(); updateStatus("Invalid win declaration."); toggleCallButtons([]); passTurn(); } render();
   }
 
   // --- AI LOGIC FUNCTIONS ---
@@ -343,13 +299,15 @@
   }
   function aiHandlePung() {
       const tileToMatch = lastDiscardedTile; let tilesForPung = [tileToMatch]; let removedCount = 0;
-      for (let i = opponentHand.length - 1; i >= 0 && removedCount < 2; i--) { if (opponentHand[i].s === tileToMatch.s && opponentHand[i].v === tileToMatch.v) { tilesForPung.push(opponentHand.splice(i, 1)); removedCount++; } }
-      opponentExposedSets.push(tilesForPung.flat()); lastDiscardedTile = null; discardPile.pop(); updateStatus("Opponent called Pung. Opponent is discarding..."); render(); setTimeout(aiDiscard, 1000);
+      for (let i = opponentHand.length - 1; i >= 0 && removedCount < 2; i--) { if (opponentHand[i].s === tileToMatch.s && opponentHand[i].v === tileToMatch.v) { tilesForPung.push(opponentHand.splice(i, 1)[0]); removedCount++; } }
+      opponentExposedSets.push(tilesForPung.flat()); lastDiscardedTile = null; discardPile.pop(); updateStatus("Opponent called Pung. Opponent is discarding..."); render();
+      if (opponentTurnTimeout) clearTimeout(opponentTurnTimeout); opponentTurnTimeout = setTimeout(aiDiscard, 1000);
   }
   function aiHandleKong() {
       const tileToMatch = lastDiscardedTile; let tilesForKong = [tileToMatch]; let removedCount = 0;
-      for (let i = opponentHand.length - 1; i >= 0 && removedCount < 3; i--) { if (opponentHand[i].s === tileToMatch.s && opponentHand[i].v === tileToMatch.v) { tilesForKong.push(opponentHand.splice(i, 1)); removedCount++; } }
-      opponentExposedSets.push(tilesForKong.flat()); lastDiscardedTile = null; discardPile.pop(); updateStatus("Opponent called Kong. Opponent draws replacement tile..."); render(); setTimeout(() => drawReplacementTile('opponent'), 1000);
+      for (let i = opponentHand.length - 1; i >= 0 && removedCount < 3; i--) { if (opponentHand[i].s === tileToMatch.s && opponentHand[i].v === tileToMatch.v) { tilesForKong.push(opponentHand.splice(i, 1)[0]); removedCount++; } }
+      opponentExposedSets.push(tilesForKong.flat()); lastDiscardedTile = null; discardPile.pop(); updateStatus("Opponent called Kong. Opponent draws replacement tile..."); render();
+      if (opponentTurnTimeout) clearTimeout(opponentTurnTimeout); opponentTurnTimeout = setTimeout(() => drawReplacementTile('opponent'), 1000);
   }
   function aiHandleWin() {
       if (!lastDiscardedTile) return;
