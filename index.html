@@ -3,7 +3,7 @@
 <head>
  <meta charset="UTF-8">
  <meta name="viewport" content="width=device-width, initial-scale=1.0">
- <title>Taiwanese Mahjong - Premium (Updated Kong)</title>
+ <title>Taiwanese Mahjong - 2 Player</title>
  <style>
  :root {
  --table-green: #1a4a33;
@@ -47,7 +47,7 @@
  .tile[data-suit="wan"] { color: #cc0000; }
  .tile[data-suit="tong"] { color: #1a4fa0; }
  .tile[data-suit="tiao"] { color: #1a8033; }
- .tile[data-suit="word"] { color: #222; }
+ .tile[data-suit="word"] { color: #333; }
  .tile[data-val="red"] { color: #ff0000; }
  .tile[data-val="green"] { color: #00aa00; }
  /* Interaction */
@@ -100,8 +100,10 @@
   let opponentExposedSets = [];
   let lastDiscardedTile = null;
   let activePlayer = 'player';
+  let opponentTurnTimeout = null;
 
   function initGame() {
+   if (opponentTurnTimeout) clearTimeout(opponentTurnTimeout); 
    deck = [];
    SUITS.forEach(s => { for(let i=1; i<=9; i++) for(let c=0; c<4; c++) deck.push({s, v:i}); });
    WORDS.forEach(v => { for(let c=0; c<4; c++) deck.push({s:'word', v}); });
@@ -111,6 +113,7 @@
    }
    playerHand = deck.splice(0, HAND_SIZE);
    opponentHand = deck.splice(0, HAND_SIZE);
+   discardPile = [];
    sortHand(playerHand);
    drawTile('player');
    toggleCallButtons([]);
@@ -125,10 +128,12 @@
     playerHand.push(tile);
     isPlayerTurn = true;
     updateStatus("Your turn: Discard a tile");
+    // After drawing, immediately check if this hand wins
+    checkForCalls('player', true); 
    } else {
     opponentHand.push(tile);
     updateStatus("Opponent is thinking...");
-    setTimeout(aiDiscard, 1000);
+    opponentTurnTimeout = setTimeout(aiDiscard, 1000); 
    }
    render();
   }
@@ -141,7 +146,7 @@
     isPlayerTurn = false;
     sortHand(playerHand);
     render();
-    checkForCalls('opponent');
+    checkForCalls('opponent'); 
   }
 
   function aiDiscard() {
@@ -187,7 +192,6 @@
     el.dataset.suit = t.s; el.dataset.val = t.v; el.innerText = getDisplay(t);
     dDiv.appendChild(el);
    });
-
    pESDiv.innerHTML = '';
    playerExposedSets.flat().forEach(t => {
         const el = document.createElement('div'); el.className = 'tile';
@@ -218,57 +222,145 @@
       if (options.length > 0) { updateStatus("You can make a call or Pass"); }
   }
 
-  function checkForCalls(caller) {
-      if (caller === 'player' && lastDiscardedTile) {
+  function canFormChow(hand, tile) {
+    if (tile.s === 'word') return false;
+    const value = parseInt(tile.v);
+    const suit = tile.s;
+    let sequences = [];
+    if (value > 1) {
+        const t1 = hand.find(t => t.s === suit && t.v == value - 1);
+        const t2 = hand.find(t => t.s === suit && t.v == value - 2);
+        if (t1 && t2) sequences.push([t2, t1, tile]);
+    }
+    if (value < 9) {
+        const t1 = hand.find(t => t.s === suit && t.v == value + 1);
+        const t2 = hand.find(t => t.s === suit && t.v == value - 1);
+        if (t1 && t2) sequences.push([t2, tile, t1]);
+    }
+    if (value < 8) {
+        const t1 = hand.find(t => t.s === suit && t.v == value + 1);
+        const t2 = hand.find(t => t.s === suit && t.v == value + 2);
+        if (t1 && t2) sequences.push([tile, t1, t2]);
+    }
+    return sequences.length > 0;
+  }
+
+  // Helper function for deep cloning an array of tile objects
+  function cloneHand(hand) {
+      return hand.map(t => ({ s: t.s, v: t.v }));
+  }
+
+  // The main recursive winning hand check function
+  function isWinningHand(handToCheck) {
+      // Base case: If hand is empty, we found all sets and eyes.
+      if (handToCheck.length === 0) return true;
+
+      // Check for Pung
+      for (let i = 0; i <= handToCheck.length - 3; i++) {
+          if (handToCheck[i].s === handToCheck[i+1].s && handToCheck[i].v === handToCheck[i+1].v && handToCheck[i].v === handToCheck[i+2].v) {
+              const remainingHand = cloneHand(handToCheck);
+              remainingHand.splice(i, 3); // Remove the Pung
+              if (isWinningHand(remainingHand)) return true;
+          }
+      }
+      
+      // Check for Chow (only for suited tiles)
+      if (handToCheck[0].s !== 'word') {
+        const value = parseInt(handToCheck[0].v);
+        // Look for the next two consecutive tiles
+        const t1Index = handToCheck.findIndex(t => t.s === handToCheck[0].s && t.v == value + 1);
+        const t2Index = handToCheck.findIndex(t => t.s === handToCheck[0].s && t.v == value + 2);
+
+        if (t1Index > -1 && t2Index > -1) {
+            const remainingHand = cloneHand(handToCheck);
+            // Remove tiles by index, starting from highest index to keep other indices valid
+            remainingHand.splice(t2Index, 1);
+            remainingHand.splice(t1Index, 1);
+            remainingHand.splice(0, 1);
+            if (isWinningHand(remainingHand)) return true;
+        }
+      }
+
+      // If neither Pung nor Chow works from the current first tile, this branch fails
+      return false;
+  }
+
+  // Check for Calls (Updated to include Win check)
+  function checkForCalls(caller, isSelfDraw = false) {
+      if (caller === 'player') {
           let possibleCalls = [];
-          const tile = lastDiscardedTile;
-          const pungCount = playerHand.filter(t => t.s === tile.s && t.v === tile.v).length;
-          if (pungCount >= 2) { possibleCalls.push('pung'); }
-          if (pungCount >= 3) { possibleCalls.push('kong'); } // Kong possible if 3 in hand + 1 discarded
-          toggleCallButtons(possibleCalls); 
-          if (possibleCalls.length === 0) { passTurn(); }
-      } else {
-          passTurn(); // AI always passes for now
+          
+          // Check for winning hand condition
+          // If a tile was just discarded, temporarily add it to the hand to check the 17-tile win condition
+          if (lastDiscardedTile) playerHand.push(lastDiscardedTile); 
+          if (playerHand.length % 3 === 2 && isWinningHand(cloneHand(playerHand))) {
+              possibleCalls.push('win');
+          }
+          if (lastDiscardedTile) playerHand.pop(); // Remove it back if it was discarded tile
+
+          if (isSelfDraw) {
+              // If we drew the tile ourselves, we can only Win or discard
+              toggleCallButtons(possibleCalls.includes('win') ? ['win'] : []);
+              if (possibleCalls.length === 0) updateStatus("Your turn: Discard a tile");
+          } else if (lastDiscardedTile) {
+              // If a tile was discarded by opponent, check Pung, Kong, Chow
+              const tile = lastDiscardedTile;
+              const pungCount = playerHand.filter(t => t.s === tile.s && t.v === tile.v).length;
+              if (pungCount >= 2) possibleCalls.push('pung');
+              if (pungCount >= 3) possibleCalls.push('kong');
+              if (canFormChow(playerHand, tile)) possibleCalls.push('chow');
+              
+              toggleCallButtons(possibleCalls); 
+              if (possibleCalls.length === 0 && !isSelfDraw) passTurn();
+          }
+      } else if (caller === 'opponent') { 
+          passTurn(); // AI opponent always passes for now
       }
   }
   
   function passTurn() {
+      const tilePassed = lastDiscardedTile; 
+      lastDiscardedTile = null; 
       toggleCallButtons([]);
-      setTimeout(() => drawTile('opponent'), 800);
-      lastDiscardedTile = null;
+      setTimeout(() => {
+          if (tilePassed) {
+             drawTile('opponent');
+          }
+      }, 800);
   }
 
   function handlePung(caller) { 
       if (caller !== 'player' || !lastDiscardedTile) return;
-
       const tileToMatch = lastDiscardedTile;
       let tilesForPung = [tileToMatch];
       let removedCount = 0;
       for (let i = playerHand.length - 1; i >= 0 && removedCount < 2; i--) {
           if (playerHand[i].s === tileToMatch.s && playerHand[i].v === tileToMatch.v) {
-              tilesForPung.push(playerHand.splice(i, 1)[0]); // Get the tile object itself
+              tilesForPung.push(playerHand.splice(i, 1));
               removedCount++;
           }
       }
-      
-      playerExposedSets.push(tilesForPung);
+      playerExposedSets.push(tilesForPung.flat()); // Use flat() here
       lastDiscardedTile = null;
-      discardPile.pop(); // Remove the tile from the discard pile array
+      discardPile.pop();
       sortHand(playerHand);
-      
       toggleCallButtons([]); 
       isPlayerTurn = true;
       updateStatus("You called Pung. Please discard a tile.");
       render();
   }
 
-  // New function for the Kong replacement tile draw
   function drawReplacementTile(who) {
-      if (deck.length === 0) return updateStatus("Draw Game!"); // Should draw from end of deck ("wall")
+      if (deck.length === 0) return updateStatus("Draw Game!");
       const tile = deck.pop();
       if (who === 'player') {
           playerHand.push(tile);
-          isPlayerTurn = true; // Player gets to discard again after Kong
+          isPlayerTurn = true;
+          // Check for immediate win after drawing replacement tile
+          if (isWinningHand(cloneHand(playerHand))) {
+             toggleCallButtons(['win']);
+             return;
+          }
           updateStatus("Drew replacement tile. Please discard a tile.");
       }
       render();
@@ -276,37 +368,79 @@
 
   function handleKong(caller) {
     if (caller !== 'player' || !lastDiscardedTile) return;
-
     const tileToMatch = lastDiscardedTile;
     let tilesForKong = [tileToMatch];
     let removedCount = 0;
     for (let i = playerHand.length - 1; i >= 0 && removedCount < 3; i--) {
         if (playerHand[i].s === tileToMatch.s && playerHand[i].v === tileToMatch.v) {
-            tilesForKong.push(playerHand.splice(i, 1)[0]); // Get the tile object
+            tilesForKong.push(playerHand.splice(i, 1));
             removedCount++;
         }
     }
-
-    playerExposedSets.push(tilesForKong);
+    playerExposedSets.push(tilesForKong.flat()); // Use flat() here
     lastDiscardedTile = null;
-    discardPile.pop(); // Remove the tile from the discard pile array
+    discardPile.pop();
     sortHand(playerHand);
-
     toggleCallButtons([]);
-    // After calling Kong, the player draws a replacement tile (drawReplacementTile handles turn status)
     drawReplacementTile('player');
   }
 
-
   function handleChow(caller) { 
-      console.log(caller + " called Chow! (Logic TBD)"); 
-      updateStatus("You called Chow. Please discard a tile.");
+      if (caller !== 'player' || !lastDiscardedTile) return;
+      const tileToMatch = lastDiscardedTile;
+      const value = parseInt(tileToMatch.v);
+      const suit = tileToMatch.s;
+      let tilesForChow = [];
+      let hand = playerHand;
+
+      let t1 = hand.find(t => t.s === suit && t.v == value - 1);
+      let t2 = hand.find(t => t.s === suit && t.v == value - 2);
+      if (t1 && t2) { tilesForChow = [t2, t1]; } 
+      if (tilesForChow.length === 0) {
+          t1 = hand.find(t => t.s === suit && t.v == value - 1);
+          t2 = hand.find(t => t.s === suit && t.v == value + 1);
+          if (t1 && t2) { tilesForChow = [t1, t2]; } 
+      }
+      if (tilesForChow.length === 0) {
+          t1 = hand.find(t => t.s === suit && t.v == value + 1);
+          t2 = hand.find(t => t.s === suit && t.v == value + 2);
+          if (t1 && t2) { tilesForChow = [t1, t2]; }
+      }
+
+      tilesForChow.forEach(foundTile => {
+          const index = playerHand.indexOf(foundTile);
+          if (index > -1) {
+              playerHand.splice(index, 1);
+          }
+      });
+      
+      tilesForChow.push(tileToMatch);
+      tilesForChow.sort((a,b) => (a.s + a.v).localeCompare(b.s + b.v));
+      playerExposedSets.push(tilesForChow);
+
+      lastDiscardedTile = null;
+      discardPile.pop();
+      sortHand(playerHand);
+      
       toggleCallButtons([]); 
+      isPlayerTurn = true;
+      updateStatus("You called Chow. Please discard a tile.");
+      render();
   }
+
   function handleWin(caller) {
-      console.log(caller + " declared Mahjong and won!");
-      updateStatus("Mahjong! " + caller + " wins the game!");
-      toggleCallButtons([]);
+      if (caller !== 'player') return;
+
+      // Final check for win condition after a call or self-draw
+      if (isWinningHand(cloneHand(playerHand))) {
+        updateStatus("Mahjong! " + caller + " wins the game!");
+        toggleCallButtons([]);
+        // Game end logic (disable discards, etc.)
+        isPlayerTurn = false;
+      } else {
+        updateStatus("Cannot declare Win right now. Check hand rules.");
+        toggleCallButtons([]);
+      }
   }
 
 
