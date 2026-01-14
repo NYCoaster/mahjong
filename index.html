@@ -3,29 +3,307 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Taiwanese Mahjong Prototype</title>
-    <link rel="stylesheet" href="style.css">
+    <title>Taiwanese Mahjong</title>
+    <style>
+        /* --- CSS STYLES --- */
+        body {
+            background-color: #2e8b57; /* SeaGreen Felt */
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: white;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .game-container {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            max-width: 1000px;
+            padding: 20px;
+            height: 95vh;
+        }
+
+        .info-panel {
+            text-align: center;
+            background: rgba(0,0,0,0.2);
+            padding: 10px;
+            border-radius: 8px;
+            width: 100%;
+        }
+
+        h1 { margin: 0 0 10px 0; font-size: 1.5rem; }
+
+        button {
+            padding: 8px 16px;
+            cursor: pointer;
+            background: #fff;
+            border: none;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 1rem;
+        }
+
+        button:hover { background: #eee; }
+
+        /* --- TILE STYLING --- */
+        .tile {
+            width: 36px;
+            height: 50px;
+            background-color: ivory;
+            border: 1px solid #999;
+            border-radius: 4px;
+            box-shadow: 2px 2px 4px rgba(0,0,0,0.4);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+            user-select: none;
+            position: relative;
+            border-bottom: 4px solid #bbb;
+            margin: 0 1px;
+        }
+
+        /* Suit Colors */
+        .tile[data-suit="wan"] { color: #D32F2F; }
+        .tile[data-suit="tong"] { color: #1976D2; }
+        .tile[data-suit="tiao"] { color: #388E3C; }
+        .tile[data-suit="word"] { color: #000; }  
+
+        /* Hover effect for player tiles */
+        .player-hand .tile:hover {
+            transform: translateY(-10px);
+            cursor: pointer;
+            border-color: gold;
+        }
+
+        /* --- LAYOUTS --- */
+        .hand {
+            display: flex;
+            justify-content: center;
+            gap: 2px;
+            min-height: 60px;
+            padding: 10px;
+            background: rgba(0,0,0,0.1);
+            border-radius: 10px;
+            width: 100%;
+        }
+
+        .opponent-hand .tile {
+            background-color: #2a5caa;
+            color: transparent;
+            border: 1px solid #1e4585;
+            background-image: linear-gradient(135deg, #2a5caa 25%, #1e4585 25%, #1e4585 50%, #2a5caa 50%, #2a5caa 75%, #1e4585 75%, #1e4585 100%);
+            background-size: 10px 10px;
+        }
+
+        .table-center {
+            flex-grow: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            border: 2px dashed rgba(255,255,255,0.2);
+            border-radius: 20px;
+            margin: 10px 0;
+            background: rgba(0,0,0,0.05);
+        }
+
+        .discard-pile {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            max-width: 600px;
+            justify-content: center;
+            padding: 10px;
+        }
+    </style>
 </head>
 <body>
 
     <div class="game-container">
         <div class="info-panel">
             <h1>Taiwanese Mahjong (16 Tiles)</h1>
-            <div id="status">Player's Turn: Draw a tile</div>
+            <div id="status" style="margin-bottom: 10px; font-size: 1.2rem;">Player's Turn: Draw a tile</div>
             <button onclick="initGame()">Restart Game</button>
         </div>
 
-        <div class="hand opponent-hand" id="opponent-hand">
-            </div>
+        <div class="hand opponent-hand" id="opponent-hand"></div>
 
         <div class="table-center">
             <div class="discard-pile" id="discard-pile"></div>
         </div>
 
-        <div class="hand player-hand" id="player-hand">
-            </div>
+        <div class="hand player-hand" id="player-hand"></div>
     </div>
 
-    <script src="script.js"></script>
+    <script>
+        // --- JAVASCRIPT LOGIC ---
+        const SUITS = ['wan', 'tong', 'tiao'];
+        const WORDS = ['east', 'south', 'west', 'north', 'red', 'green', 'white'];
+        const HAND_SIZE = 16;
+
+        let deck = [];
+        let playerHand = [];
+        let opponentHand = [];
+        let discardPile = [];
+        let isPlayerTurn = true;
+
+        function initGame() {
+            deck = createDeck();
+            shuffle(deck);
+            playerHand = [];
+            opponentHand = [];
+            discardPile = [];
+
+            for(let i = 0; i < HAND_SIZE; i++) {
+                playerHand.push(deck.pop());
+                opponentHand.push(deck.pop());
+            }
+
+            sortHand(playerHand);
+            drawTile('player');
+            render();
+        }
+
+        function createDeck() {
+            let newDeck = [];
+            SUITS.forEach(suit => {
+                for (let i = 1; i <= 9; i++) {
+                    for (let count = 0; count < 4; count++) {
+                        newDeck.push({ type: 'suit', suit: suit, value: i });
+                    }
+                }
+            });
+            WORDS.forEach(word => {
+                for (let count = 0; count < 4; count++) {
+                    newDeck.push({ type: 'word', suit: 'word', value: word });
+                }
+            });
+            return newDeck;
+        }
+
+        function shuffle(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+
+        function drawTile(who) {
+            if (deck.length === 0) {
+                updateStatus("Wall is empty! Draw game.");
+                return;
+            }
+
+            const tile = deck.pop();
+            if (who === 'player') {
+                playerHand.push(tile);
+                isPlayerTurn = true;
+                updateStatus("YOUR TURN: Click a tile to discard.");
+            } else {
+                opponentHand.push(tile);
+                updateStatus("Opponent is thinking...");
+                setTimeout(aiDiscard, 1000);
+            }
+            render();
+        }
+
+        function playerDiscard(index) {
+            if (!isPlayerTurn) return;
+
+            const tile = playerHand.splice(index, 1)[0];
+            discardPile.push(tile);
+            sortHand(playerHand);
+
+            isPlayerTurn = false;
+            render();
+
+            setTimeout(() => drawTile('opponent'), 800);
+        }
+
+        function aiDiscard() {
+            const randomIndex = Math.floor(Math.random() * opponentHand.length);
+            const tile = opponentHand.splice(randomIndex, 1)[0];
+            discardPile.push(tile);
+            render();
+            setTimeout(() => drawTile('player'), 500);
+        }
+
+        function sortHand(hand) {
+            hand.sort((a, b) => {
+                if (a.suit < b.suit) return -1;
+                if (a.suit > b.suit) return 1;
+                if (typeof a.value === 'number' && typeof b.value === 'number') {
+                    return a.value - b.value;
+                }
+                if (a.value < b.value) return -1;
+                if (a.value > b.value) return 1;
+                return 0;
+            });
+        }
+
+        function getTileDisplay(tile) {
+            if(tile.suit === 'wan') return tile.value + '萬';
+            if(tile.suit === 'tong') return tile.value + '筒';
+            if(tile.suit === 'tiao') return tile.value + '索';
+
+            const map = {
+                'east': '東', 'south': '南', 'west': '西', 'north': '北',
+                'red': '中', 'green': '發', 'white': '白'
+            };
+            return map[tile.value] || tile.value;
+        }
+
+        function render() {
+            const playerDiv = document.getElementById('player-hand');
+            const opponentDiv = document.getElementById('opponent-hand');
+            const discardDiv = document.getElementById('discard-pile');
+
+            playerDiv.innerHTML = '';
+            playerHand.forEach((tile, index) => {
+                const el = document.createElement('div');
+                el.className = 'tile';
+                el.dataset.suit = tile.suit;
+                el.innerText = getTileDisplay(tile);
+                // Highlight the newly drawn tile (last one)
+                if (index === playerHand.length - 1 && isPlayerTurn) {
+                    el.style.border = "2px solid red";
+                    el.style.marginLeft = "10px"; // Separate drawn tile
+                }
+                el.onclick = () => playerDiscard(index);
+                playerDiv.appendChild(el);
+            });
+
+            opponentDiv.innerHTML = '';
+            opponentHand.forEach(() => {
+                const el = document.createElement('div');
+                el.className = 'tile';
+                opponentDiv.appendChild(el);
+            });
+
+            discardDiv.innerHTML = '';
+            discardPile.forEach(tile => {
+                const el = document.createElement('div');
+                el.className = 'tile';
+                el.dataset.suit = tile.suit;
+                el.innerText = getTileDisplay(tile);
+                discardDiv.appendChild(el);
+            });
+        }
+
+        function updateStatus(msg) {
+            document.getElementById('status').innerText = msg;
+        }
+
+        // Start the game
+        initGame();
+    </script>
 </body>
 </html>
