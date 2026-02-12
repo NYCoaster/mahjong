@@ -1,407 +1,103 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Taiwanese Mahjong - Full Flow (with robust Chow)</title>
-<style>
-:root {
---table-green: #1a4a33; --tile-ivory: #fffffa; --tile-back: #006633;
---tile-shadow: rgba(0,0,0,0.3);
-}
-body {
-background-color: var(--table-green); background-image:
-radial-gradient(circle, #2e8b57 0%, #1a4a33 100%);
-font-family: "Microsoft JhengHei", "Heiti TC", sans-serif; color: white;
-margin: 0; display: flex; justify-content: center; height: 100vh;
-overflow: hidden;
-}
-.game-container {
-display: flex; flex-direction: column; justify-content: space-between;
-align-items: center; width: 95%; max-width: 1100px; padding: 15px; height:
-98vh; position: relative;
-}
-.info-panel { text-align: center; background: rgba(0,0,0,0.4); padding:
-10px 30px; border-radius: 50px; border: 1px solid rgba(255,255,255,0.1);
-box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
-h1 { margin: 0; font-size: 1.2rem; color: #ffd700; text-transform:
-uppercase; letter-spacing: 2px; }
-#status { font-weight: 300; color: #ddd; margin: 5px 0; }
-button { padding: 5px 15px; cursor: pointer; background:
-linear-gradient(#eee, #ccc); border: 1px solid #999; border-radius: 3px;
-font-weight: bold; transition: all 0.2s; }
-button:hover { background: #fff; transform: scale(1.05); }
-.tile {
- position: relative; width: 42px; height: 58px; background:
-var(--tile-ivory); border-radius: 4px;
- display: flex; justify-content: center; align-items: center;
- font-size: 28px; font-weight: bold;
- cursor: pointer; user-select: none; border: 1px solid #ddd;
-border-bottom: 5px solid #bbb; border-right: 3px solid #ccc; box-shadow:
-4px 4px 8px var(--tile-shadow); transition: transform 0.1s, margin 0.2s;
-}
-.opponent-hand .tile {
- background: var(--tile-back); background-image: linear-gradient(135deg,
-#007744 25%, #005522 100%); border: 1px solid #004411; border-bottom: 5px
-solid #003311; border-right: 3px solid #004411;
- color: transparent !important;
-}
-.tile[data-suit="wan"] { color: #cc0000; } .tile[data-suit="tong"] {
-color: #1a4fa0; } .tile[data-suit="tiao"] { color: #1a8033; }
-.tile[data-suit="word"] { color: #333; }
-.tile[data-val="red"] { color: #ff0000; } .tile[data-val="green"] { color:
-#00aa00; }
-.player-hand .tile:hover { transform: translateY(-12px); z-index: 10; }
-.drawn-tile { margin-left: 15px !important; border: 2px solid gold
-!important; }
-.hand { display: flex; justify-content: center; align-items: flex-end;
-gap: 2px; padding: 15px; width: 100%; }
-.table-center { flex-grow: 1; width: 100%; background: rgba(0,0,0,0.1);
-border-radius: 100px / 20px; box-shadow: inset 0 0 50px rgba(0,0,0,0.3);
-display: flex; flex-direction: column; justify-content: center;
-align-items: center; padding: 20px; }
-.discard-pile { color: initial; display: grid; grid-template-columns:
-repeat(10, 1fr); gap: 5px; max-width: 500px; }
-.discard-pile .tile { width: 30px; height: 42px; font-size: 20px;
-border-bottom-width: 3px; border-right-width: 2px; cursor: default; }
-.exposed-sets { display: flex; gap: 10px; margin-bottom: 10px; }
-.exposed-sets .tile { cursor: default; }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Taiwanese Mahjong Game</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 20px;
+        }
+        #game {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .tile {
+            width: 50px;
+            height: 70px;
+            border: 1px solid #000;
+            margin: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            background-color: #fff;
+            cursor: pointer;
+        }
+        .robot {
+            margin: 20px;
+        }
+        .achievement {
+            margin-top: 20px;
+            font-size: 18px;
+        }
+    </style>
 </head>
 <body>
-<div class="game-container">
-<div class="info-panel">
- <h1>Taiwanese Mahjong (Full Flow)</h1>
- <div id="status">Initializing...</div>
- <button onclick="initGame()">New Game</button>
-</div>
-<div class="hand opponent-hand" id="opponent-hand"></div>
-<div class="table-center">
- <div class="discard-pile" id="discard-pile"></div>
-</div>
-<div class="exposed-sets" id="player-exposed-sets"></div>
-<div class="hand player-hand" id="player-hand"></div>
 
-<!-- Response to discard buttons (Chow/Pong/Gang/Hu/Skip) -->
-<div class="call-buttons" id="call-buttons" style="display: none; margin-top: 10px;">
-    <button onclick="handleCall('chow')">Chow</button>
-    <button onclick="handleCall('pong')">Pong</button>
-    <button onclick="handleCall('gang_exposed')">Gang</button>
-    <button onclick="handleCall('hu_discard')">Hu (Win)</button>
-    <button onclick="handleCall('skip')">Skip</button>
+<div id="game">
+    <h1>Taiwanese Mahjong</h1>
+    <div id="player-tiles" class="tiles"></div>
+    <div class="robot" id="robot1"></div>
+    <div class="robot" id="robot2"></div>
+    <div class="robot" id="robot3"></div>
+    <div id="achievements" class="achievement"></div>
 </div>
 
-<!-- In-turn action buttons (Concealed/Add-on Gang) -->
-<div class="in-turn-buttons" id="in-turn-buttons" style="display: none; margin-top: 10px;">
-    <button onclick="handleInTurnAction('gang_concealed')">Concealed Gang</button>
-    <button onclick="handleInTurnAction('gang_addon')">Add-on Gang</button>
-</div>
-
-</div>
 <script>
-const SUITS = ['wan', 'tong', 'tiao'];
-const WORDS = ['east', 'south', 'west', 'north', 'red', 'green', 'white'];
-const HAND_SIZE = 16;
-let deck = [], playerHand = [], opponentHand = [], discardPile = [];
-let playerExposedSets = [];
-let gameState = 'waitingForDiscard'; 
-let isPlayerTurn = true;
-let opponentTurnTimeout = null;
-let lastDiscardedTile = null;
+    const tiles = ['1Bamboo', '2Bamboo', '3Bamboo', '4Bamboo', '5Bamboo', '6Bamboo', '7Bamboo', '8Bamboo', '9Bamboo',
+                   '1Character', '2Character', '3Character', '4Character', '5Character', '6Character', '7Character', '8Character', '9Character',
+                   '1Dot', '2Dot', '3Dot', '4Dot', '5Dot', '6Dot', '7Dot', '8Dot', '9Dot',
+                   'EastWind', 'SouthWind', 'WestWind', 'NorthWind', 'RedDragon', 'GreenDragon', 'WhiteDragon'];
 
-function initGame() {
- if (opponentTurnTimeout) clearTimeout(opponentTurnTimeout);
- deck = [];
- SUITS.forEach(s => { for(let i=1; i<=9; i++) for(let c=0; c<4; c++) deck.push({s, v:i}); });
- WORDS.forEach(v => { for(let c=0; c<4; c++) deck.push({s:'word', v}); });
- for(let i = deck.length - 1; i > 0; i--) {
- const j = Math.floor(Math.random() * (i + 1));
- [deck[i], deck[j]] = [deck[j], deck[i]];
- }
- playerHand = deck.splice(0, HAND_SIZE); opponentHand = deck.splice(0, HAND_SIZE);
- discardPile = []; playerExposedSets = [];
- sortHand(playerHand); drawTile('player');
- render();
-}
+    let playerTiles = [];
+    let robots = [{name: 'Robot 1', level: 1}, {name: 'Robot 2', level: 2}, {name: 'Robot 3', level: 3}];
+    let achievements = [];
 
-function checkAndPromptForCalls(tile, hand, isPlayerToLeft) {
-    lastDiscardedTile = tile;
-    gameState = 'waitingForCallResponse';
-    document.getElementById('call-buttons').style.display = 'block';
-    updateStatus("A tile was discarded. Choose an action.");
-}
-
-function handleCall(action) {
-    document.getElementById('call-buttons').style.display = 'none';
-    gameState = 'waitingForDiscard';
-
-    if (action === 'skip') {
-        updateStatus("Skipped. Turn continues.");
-        lastDiscardedTile = null;
-        drawTile('player');
-    } else if (action === 'pong') {
-        if (canPong(lastDiscardedTile, playerHand)) {
-            performPong(lastDiscardedTile);
-            updateStatus("Pong successful! Please discard a tile.");
-            isPlayerTurn = true;
-        } else { handleCall('skip'); }
-    } else if (action === 'gang_exposed') {
-        if (canGang(lastDiscardedTile, playerHand)) {
-            performExposedGang(lastDiscardedTile);
-            updateStatus("Gang successful! Please discard a tile.");
-            isPlayerTurn = true;
-        } else { handleCall('skip'); }
-    } else if (action === 'chow') {
-        // In this 2p setup, player is to AI's left, so chow is always possible on AI discard if valid
-        const combo = getChowCombo(lastDiscardedTile, playerHand);
-        if (combo) {
-            performChow(lastDiscardedTile, combo);
-            updateStatus("Chow successful! Please discard a tile.");
-            isPlayerTurn = true;
-        } else { handleCall('skip'); }
-    } else if (action === 'hu_discard') {
-        if (canHu(lastDiscardedTile, playerHand, playerExposedSets)) {
-            updateStatus("YOU WIN! Declared Hu!");
-        } else { handleCall('skip'); }
+    function initGame() {
+        playerTiles = drawTiles(13);
+        displayTiles(playerTiles, 'player-tiles');
+        robots.forEach(robot => {
+            robot.tiles = drawTiles(13);
+            displayTiles(robot.tiles, robot.name.toLowerCase());
+        });
+        checkAchievements();
     }
-    render();
-}
 
-function handleInTurnAction(action) {
-    document.getElementById('in-turn-buttons').style.display = 'none';
-    if (action === 'gang_concealed') {
-        const gangTile = findConcealedGang(playerHand);
-        if (gangTile) {
-            performConcealedGang(gangTile);
-            updateStatus("Concealed Gang successful! Please discard a tile.");
-        } else {
-             updateStatus("Invalid concealed gang.");
+    function drawTiles(count) {
+        const shuffledTiles = tiles.sort(() => 0.5 - Math.random());
+        return shuffledTiles.slice(0, count);
+    }
+
+    function displayTiles(tiles, containerId) {
+        const container = document.getElementById(containerId);
+        container.innerHTML = '';
+        tiles.forEach(tile => {
+            const tileElement = document.createElement('div');
+            tileElement.className = 'tile';
+            tileElement.innerText = tile;
+            container.appendChild(tileElement);
+        });
+    }
+
+    function checkAchievements() {
+        if (playerTiles.includes('1Bamboo')) {
+            achievements.push('Achievement Unlocked: First Tile!');
         }
-    } else if (action === 'gang_addon') {
-         const gangTile = findAddonGang(playerHand, playerExposedSets);
-        if (gangTile) {
-            performAddonGang(gangTile);
-            updateStatus("Add-on Gang successful! Please discard a tile.");
-        } else {
-             updateStatus("Invalid add-on gang.");
-        }
+        updateAchievements();
     }
-    render();
-}
 
-// --- Validation & Tile Finding Functions ---
-
-function canPong(tile, hand) {
-    let count = 0;
-    for (const t of hand) { if (t.s === tile.s && t.v === tile.v) { count++; } }
-    return count >= 2;
-}
-
-function canGang(tile, hand) {
-    let count = 0;
-    for (const t of hand) { if (t.s === tile.s && t.v === tile.v) { count++; } }
-    return count === 3;
-}
-
-// Returns the combination of values needed for a chow, or null if not possible
-function getChowCombo(tile, hand) {
-    if (tile.s === 'word') return null;
-    const v = parseInt(tile.v);
-    if (isNaN(v)) return null;
-
-    const hasTile = (value) => hand.some(t => t.s === tile.s && t.v == value);
-
-    if (v >= 3 && hasTile(v-1) && hasTile(v-2)) return [v-2, v-1];
-    if (v <= 7 && hasTile(v+1) && hasTile(v+2)) return [v+1, v+2];
-    if (v >= 2 && v <= 8 && hasTile(v-1) && hasTile(v+1)) return [v-1, v+1];
-
-    return null;
-}
-
-function canHu(tile, hand, exposedSets) {
-    const totalTilesInSets = exposedSets.reduce((sum, set) => sum + set.length, 0);
-    const totalTiles = hand.length + totalTilesInSets + 1;
-    if (totalTiles !== 17) return false;
-    // Real winning hand validation (e.g., 5 sets + pair) is complex and omitted here.
-    return true; 
-}
-
-function findConcealedGang(hand) {
-    const counts = hand.reduce((acc, t) => {
-        const key = `${t.s}-${t.v}`;
-        acc[key] = (acc[key] || 0) + 1;
-        return acc;
-    }, {});
-    for (const key in counts) {
-        if (counts[key] === 4) {
-            const [s, v] = key.split('-');
-            return { s, v: isNaN(Number(v)) ? v : Number(v) };
-        }
+    function updateAchievements() {
+        const achievementContainer = document.getElementById('achievements');
+        achievementContainer.innerHTML = achievements.join('<br>');
     }
-    return null;
-}
 
-function findAddonGang(hand, exposedSets) {
-    for (const exposedSet of exposedSets) {
-        if (exposedSet.length === 3) {
-            // Find a tile in the current hand that matches the existing set's tile properties
-            const setTile = exposedSet[0]; 
-            if (hand.some(t => t.s === setTile.s && t.v === setTile.v)) {
-                return setTile;
-            }
-        }
-    }
-    return null;
-}
-
-// --- Execution Functions ---
-
-// Helper function to remove a *single* instance of a specific tile from a hand array
-function removeOneTile(hand, tileToRemove) {
-    const index = hand.findIndex(t => t.s === tileToRemove.s && t.v === tileToRemove.v);
-    if (index > -1) {
-        hand.splice(index, 1);
-        return true;
-    }
-    return false;
-}
-
-
-function performPong(tile) {
-    removeOneTile(playerHand, tile);
-    removeOneTile(playerHand, tile);
-    playerExposedSets.push([tile, tile, tile]);
-    discardPile.pop();
-    lastDiscardedTile = null;
-    sortHand(playerHand);
-}
-
-function performExposedGang(tile) {
-    removeOneTile(playerHand, tile);
-    removeOneTile(playerHand, tile);
-    removeOneTile(playerHand, tile);
-    playerExposedSets.push([tile, tile, tile, tile]);
-    discardPile.pop();
-    lastDiscardedTile = null;
-    sortHand(playerHand);
-    drawTile('player');
-}
-
-function performConcealedGang(tile) {
-     removeOneTile(playerHand, tile);
-     removeOneTile(playerHand, tile);
-     removeOneTile(playerHand, tile);
-     removeOneTile(playerHand, tile);
-    playerExposedSets.push([tile, tile, tile, tile]); 
-    sortHand(playerHand);
-    drawTile('player');
-}
-
-function performAddonGang(tile) {
-    removeOneTile(playerHand, tile);
-    const setIdx = playerExposedSets.findIndex(set => set.length === 3 && set[0].s === tile.s && set[0].v === tile.v);
-    if (setIdx > -1) {
-        playerExposedSets[setIdx].push(tile);
-    }
-    sortHand(playerHand);
-    drawTile('player');
-}
-
-function performChow(discardedTile, comboValues) {
-    const v1 = comboValues[0];
-    const v2 = comboValues[1];
-    
-    // Remove the two tiles from the hand
-    removeOneTile(playerHand, {s: discardedTile.s, v: v1});
-    removeOneTile(playerHand, {s: discardedTile.s, v: v2});
-
-    // Form the exposed set including the discarded tile and the hand tiles
-    const newSet = [{...discardedTile}, {s: discardedTile.s, v: v1}, {s: discardedTile.s, v: v2}];
-    newSet.sort((a,b) => a.v - b.v); // Sort the set numerically
-    
-    playerExposedSets.push(newSet);
-    discardPile.pop();
-    lastDiscardedTile = null;
-    sortHand(playerHand);
-}
-
-
-function drawTile(who) {
- if (deck.length === 0) return updateStatus("Draw Game!");
- const tile = deck.pop();
- if (who === 'player') {
- playerHand.push(tile); isPlayerTurn = true;
- updateStatus("YOUR TURN: Discard a tile, or use in-turn actions below.");
- document.getElementById('in-turn-buttons').style.display = 'block';
-
- } else {
- opponentHand.push(tile); updateStatus("Opponent's turn...");
- opponentTurnTimeout = setTimeout(aiDiscard, 1000);
- }
- render();
-}
-
-function playerDiscard(idx) {
- if (!isPlayerTurn || playerHand.length % 3 !== 2) return;
- document.getElementById('in-turn-buttons').style.display = 'none';
-
- const tile = playerHand.splice(idx, 1);
- discardPile.push(tile);
- isPlayerTurn = false; sortHand(playerHand); render();
- 
- updateStatus("Your turn ended. Opponent's turn starting...");
- drawTile('opponent');
-}
-
-function aiDiscard() {
- const idx = Math.floor(Math.random() * opponentHand.length);
- const tile = opponentHand.splice(idx, 1);
- discardPile.push(tile);
- render();
-
- checkAndPromptForCalls(tile, playerHand, true);
-}
-
-function sortHand(hand) { hand.sort((a,b) => (a.s + a.v).localeCompare(b.s + b.v)); }
-
-function getDisplay(t) {
- if (!t) return '';
- if(t.s === 'wan') return t.v + '🀇'; if(t.s === 'tong') return t.v + '🀠'; if(t.s === 'tiao') return t.v + '🀒';
- return {'east': '東', 'south': '南', 'west': '西', 'north': '北', 'red': '中', 'green': '發', 'white': '白'}[t.v];
-}
-
-function render() {
- document.getElementById('player-hand').innerHTML = '';
- document.getElementById('opponent-hand').innerHTML = '';
- document.getElementById('discard-pile').innerHTML = '';
- document.getElementById('player-exposed-sets').innerHTML = '';
-
- playerHand.forEach((t, i) => { const el = document.createElement('div');
- el.className = 'tile'; if (i === playerHand.length - 1 && isPlayerTurn)
- el.className += ' drawn-tile'; el.dataset.suit = t.s; el.dataset.val = t.v; el.innerText = getDisplay(t); el.onclick = () => playerDiscard(i);
- document.getElementById('player-hand').appendChild(el); });
-
- opponentHand.forEach(() => { const el = document.createElement('div');
- el.className = 'tile';
- document.getElementById('opponent-hand').appendChild(el); });
-
- discardPile.forEach(t => { const el = document.createElement('div');
- el.className = 'tile'; el.dataset.suit = t.s; el.dataset.val = t.v;
- el.innerText = getDisplay(t);
- document.getElementById('discard-pile').appendChild(el); });
-
- playerExposedSets.forEach(set => {
-    set.forEach(t => {
-        const el = document.createElement('div');
-        el.className = 'tile'; el.dataset.suit = t.s; el.dataset.val = t.v;
-        el.innerText = getDisplay(t);
-        document.getElementById('player-exposed-sets').appendChild(el);
-    });
- });
-}
-function updateStatus(msg) { document.getElementById('status').innerText = msg; }
-initGame();
+    window.onload = initGame;
 </script>
+
 </body>
 </html>
-
