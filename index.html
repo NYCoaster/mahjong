@@ -1,102 +1,486 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Taiwanese Mahjong Game</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f4;
-            margin: 0;
-            padding: 20px;
-        }
-        #game {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-        .tile {
-            width: 50px;
-            height: 70px;
-            border: 1px solid #000;
-            margin: 5px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 24px;
-            background-color: #fff;
-            cursor: pointer;
-        }
-        .robot {
-            margin: 20px;
-        }
-        .achievement {
-            margin-top: 20px;
-            font-size: 18px;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <title>Taiwanese Mahjong – Single Page</title>
+  <style>
+    body {
+      margin: 0;
+      background: #003300;
+      color: #fff;
+      font-family: Arial, sans-serif;
+    }
+    nav {
+      background: #001a00;
+      padding: 8px 12px;
+      display: flex;
+      gap: 8px;
+    }
+    nav button {
+      padding: 4px 10px;
+      border: none;
+      border-radius: 3px;
+      background: #228822;
+      color: #fff;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    nav button.active {
+      background: #ffaa00;
+      color: #000;
+    }
+    section {
+      display: none;
+      padding: 12px;
+    }
+    section.active {
+      display: block;
+    }
+    #home-section {
+      max-width: 600px;
+      line-height: 1.4;
+    }
+    #game-container {
+      position: relative;
+      width: 100%;
+      height: calc(100vh - 60px);
+    }
+    #ui {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      background: rgba(0,0,0,0.5);
+      padding: 8px 12px;
+      border-radius: 4px;
+      z-index: 10;
+      font-size: 14px;
+    }
+    #achievements-list {
+      margin: 4px 0 0;
+      padding-left: 18px;
+      max-height: 120px;
+      overflow-y: auto;
+      font-size: 13px;
+    }
+    #btn-next-hand {
+      margin-top: 6px;
+      padding: 4px 8px;
+      background: #ffaa00;
+      border: none;
+      border-radius: 3px;
+      cursor: pointer;
+    }
+    #canvas {
+      display: block;
+      background: #006020;
+    }
+    #achievements-page-list {
+      list-style: disc;
+      padding-left: 20px;
+      max-width: 600px;
+    }
+  </style>
 </head>
 <body>
 
-<div id="game">
-    <h1>Taiwanese Mahjong</h1>
-    <div id="player-tiles" class="tiles"></div>
-    <div class="robot" id="robot1"></div>
-    <div class="robot" id="robot2"></div>
-    <div class="robot" id="robot3"></div>
-    <div id="achievements" class="achievement"></div>
-</div>
+<nav>
+  <button id="nav-home" class="active">Home</button>
+  <button id="nav-game">Game</button>
+  <button id="nav-achievements">Achievements</button>
+</nav>
+
+<section id="home-section" class="active">
+  <h1>Taiwanese Mahjong</h1>
+  <p>
+    Welcome! This is a simple browser mahjong demo with 16-tile hands,
+    a basic level system, and a few achievements.
+  </p>
+  <p>
+    Go to the <strong>Game</strong> tab to play. Click a tile emoji to discard,
+    the game will draw and check for a basic winning hand shape.
+  </p>
+  <p>
+    The <strong>Achievements</strong> tab shows what you have unlocked so far.
+  </p>
+</section>
+
+<section id="game-section">
+  <div id="game-container">
+    <div id="ui">
+      <div>Level: <span id="level">1</span></div>
+      <div>XP: <span id="xp">0</span></div>
+      <div>Achievements:</div>
+      <ul id="achievements-list"></ul>
+      <button id="btn-next-hand">Next Hand</button>
+    </div>
+    <canvas id="canvas" width="1280" height="720"></canvas>
+  </div>
+</section>
+
+<section id="achievements-section">
+  <h2>Achievements</h2>
+  <p>These are the achievements you can earn while playing:</p>
+  <ul id="achievements-page-list">
+    <li><strong>First Win</strong> – Win your first hand.</li>
+    <li><strong>Big Hand</strong> – Win a hand with a high tai score (placeholder).</li>
+    <li><strong>Self Draw</strong> – Win by drawing the winning tile yourself.</li>
+    <li><strong>Flower Power</strong> – Win with many flower tiles.</li>
+  </ul>
+  <p>
+    When you unlock something, it appears here and in the in‑game panel.
+  </p>
+</section>
 
 <script>
-    const tiles = ['1Bamboo', '2Bamboo', '3Bamboo', '4Bamboo', '5Bamboo', '6Bamboo', '7Bamboo', '8Bamboo', '9Bamboo',
-                   '1Character', '2Character', '3Character', '4Character', '5Character', '6Character', '7Character', '8Character', '9Character',
-                   '1Dot', '2Dot', '3Dot', '4Dot', '5Dot', '6Dot', '7Dot', '8Dot', '9Dot',
-                   'EastWind', 'SouthWind', 'WestWind', 'NorthWind', 'RedDragon', 'GreenDragon', 'WhiteDragon'];
+  // ---------- Simple page navigation ----------
+  const navHome = document.getElementById("nav-home");
+  const navGame = document.getElementById("nav-game");
+  const navAchievements = document.getElementById("nav-achievements");
 
-    let playerTiles = [];
-    let robots = [{name: 'Robot 1', level: 1}, {name: 'Robot 2', level: 2}, {name: 'Robot 3', level: 3}];
-    let achievements = [];
+  const homeSection = document.getElementById("home-section");
+  const gameSection = document.getElementById("game-section");
+  const achievementsSection = document.getElementById("achievements-section");
 
-    function initGame() {
-        playerTiles = drawTiles(13);
-        displayTiles(playerTiles, 'player-tiles');
-        robots.forEach(robot => {
-            robot.tiles = drawTiles(13);
-            displayTiles(robot.tiles, robot.name.toLowerCase());
-        });
-        checkAchievements();
+  function setActivePage(page) {
+    [navHome, navGame, navAchievements].forEach(btn => btn.classList.remove("active"));
+    [homeSection, gameSection, achievementsSection].forEach(sec => sec.classList.remove("active"));
+
+    if (page === "home") {
+      navHome.classList.add("active");
+      homeSection.classList.add("active");
+    } else if (page === "game") {
+      navGame.classList.add("active");
+      gameSection.classList.add("active");
+    } else if (page === "achievements") {
+      navAchievements.classList.add("active");
+      achievementsSection.classList.add("active");
+    }
+  }
+
+  navHome.addEventListener("click", () => setActivePage("home"));
+  navGame.addEventListener("click", () => setActivePage("game"));
+  navAchievements.addEventListener("click", () => setActivePage("achievements"));
+
+  // ---------- Mahjong game logic (same as before) ----------
+  const SUITS = ["dots", "bams", "craks"];
+  const RANKS = [1,2,3,4,5,6,7,8,9];
+  const WINDS = ["east", "south", "west", "north"];
+  const DRAGONS = ["red", "green", "white"];
+  const FLOWERS = ["flower1","flower2","flower3","flower4","season1","season2","season3","season4"];
+
+  function createTile(kind, value) { return { kind, value }; }
+
+  function buildWall() {
+    const wall = [];
+    for (const suit of SUITS) {
+      for (const r of RANKS) {
+        for (let i = 0; i < 4; i++) wall.push(createTile("suit", { suit, rank: r }));
+      }
+    }
+    for (const w of WINDS) {
+      for (let i = 0; i < 4; i++) wall.push(createTile("wind", w));
+    }
+    for (const d of DRAGONS) {
+      for (let i = 0; i < 4; i++) wall.push(createTile("dragon", d));
+    }
+    for (const f of FLOWERS) wall.push(createTile("flower", f));
+    for (let i = wall.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [wall[i], wall[j]] = [wall[j], wall[i]];
+    }
+    return wall;
+  }
+
+  function tileKey(t) {
+    if (t.kind === "suit") return t.value.suit[0] + String(t.value.rank);
+    return t.value;
+  }
+
+  function isBasicWin(handTiles) {
+    const base = handTiles.filter(t => t.kind !== "flower");
+    if (base.length !== 17) return false;
+    const keys = base.map(tileKey).sort();
+    const counts = {};
+    for (const k of keys) counts[k] = (counts[k] || 0) + 1;
+
+    const copyCounts = obj => JSON.parse(JSON.stringify(obj));
+
+    for (const k in counts) {
+      if (counts[k] < 2) continue;
+      const test = copyCounts(counts);
+      test[k] -= 2;
+      if (test[k] === 0) delete test[k];
+      if (canFormMelds(test)) return true;
+    }
+    return false;
+  }
+
+  function canFormMelds(counts) {
+    const keys = Object.keys(counts);
+    if (keys.length === 0) return true;
+
+    const k = keys[0];
+    const c = counts[k];
+
+    if (c >= 3) {
+      counts[k] -= 3;
+      if (counts[k] === 0) delete counts[k];
+      if (canFormMelds(counts)) return true;
+      counts[k] = c;
     }
 
-    function drawTiles(count) {
-        const shuffledTiles = tiles.sort(() => 0.5 - Math.random());
-        return shuffledTiles.slice(0, count);
-    }
-
-    function displayTiles(tiles, containerId) {
-        const container = document.getElementById(containerId);
-        container.innerHTML = '';
-        tiles.forEach(tile => {
-            const tileElement = document.createElement('div');
-            tileElement.className = 'tile';
-            tileElement.innerText = tile;
-            container.appendChild(tileElement);
-        });
-    }
-
-    function checkAchievements() {
-        if (playerTiles.includes('1Bamboo')) {
-            achievements.push('Achievement Unlocked: First Tile!');
+    if (["d","b","c"].includes(k[0])) {
+      const suit = k[0];
+      const rank = parseInt(k.slice(1), 10);
+      if (rank <= 7) {
+        const k2 = suit + (rank + 1);
+        const k3 = suit + (rank + 2);
+        if (counts[k2] > 0 && counts[k3] > 0) {
+          const backup = Object.assign({}, counts);
+          counts[k]--; counts[k2]--; counts[k3]--;
+          [k,k2,k3].forEach(key => { if (counts[key] === 0) delete counts[key]; });
+          if (canFormMelds(counts)) return true;
+          Object.assign(counts, backup);
         }
-        updateAchievements();
+      }
+    }
+    return false;
+  }
+
+  const levelSystem = {
+    level: 1,
+    xp: 0,
+    xpForNextLevel() { return 100 * this.level; },
+    addXp(amount) {
+      this.xp += amount;
+      while (this.xp >= this.xpForNextLevel()) this.level++;
+    }
+  };
+
+  const achievementsState = {
+    unlocked: new Set(),
+    checkAfterHand(info) {
+      const { won, tai, selfDraw, flowers } = info;
+      if (won && !this.unlocked.has("First Win")) this.unlocked.add("First Win");
+      if (won && tai >= 8 && !this.unlocked.has("Big Hand")) this.unlocked.add("Big Hand");
+      if (selfDraw && !this.unlocked.has("Self Draw")) this.unlocked.add("Self Draw");
+      if (flowers >= 4 && !this.unlocked.has("Flower Power")) this.unlocked.add("Flower Power");
+      return Array.from(this.unlocked);
+    }
+  };
+
+  let state;
+
+  function createInitialState() {
+    const wall = buildWall();
+    const playerHand = [];
+    for (let i = 0; i < 16; i++) playerHand.push(wall.pop());
+    return {
+      wall,
+      playerHand,
+      discards: [],
+      won: false,
+      tai: 0,
+      selfDraw: false,
+      flowers: 0
+    };
+  }
+
+  function drawTile(state) {
+    if (!state.wall.length) return;
+    state.playerHand.push(state.wall.pop());
+  }
+
+  function discardTile(state, index) {
+    const [tile] = state.playerHand.splice(index, 1);
+    state.discards.push(tile);
+  }
+
+  function computeSimpleTai() { return 5; }
+
+  function checkWin(state) {
+    if (isBasicWin(state.playerHand)) {
+      state.won = true;
+      state.tai = computeSimpleTai();
+      state.selfDraw = true;
+      state.flowers = state.playerHand.filter(t => t.kind === "flower").length;
+    }
+  }
+
+  const canvas = document.getElementById("canvas");
+  const ctx = canvas.getContext("2d");
+
+  const TILE_W = 48;
+  const TILE_H = 64;
+
+  function emojiForTile(tile) {
+    if (tile.kind === "suit") {
+      const { suit, rank } = tile.value;
+      if (suit === "dots") {
+        const map = {1:"🀙",2:"🀚",3:"🀛",4:"🀜",5:"🀝",6:"🀞",7:"🀟",8:"🀠",9:"🀡"};
+        return map[rank] || "🀫";
+      }
+      if (suit === "bams") {
+        const map = {1:"🀐",2:"🀑",3:"🀒",4:"🀓",5:"🀔",6:"🀕",7:"🀖",8:"🀗",9:"🀘"};
+        return map[rank] || "🀫";
+      }
+      if (suit === "craks") {
+        const map = {1:"🀇",2:"🀈",3:"🀉",4:"🀊",5:"🀋",6:"🀌",7:"🀍",8:"🀎",9:"🀏"};
+        return map[rank] || "🀫";
+      }
+    }
+    if (tile.kind === "wind") {
+      const map = { east:"🀀", south:"🀁", west:"🀂", north:"🀃" };
+      return map[tile.value] || "🀫";
+    }
+    if (tile.kind === "dragon") {
+      const map = { red:"🀄", green:"🀅", white:"🀆" };
+      return map[tile.value] || "🀫";
+    }
+    if (tile.kind === "flower") return "🌸";
+    return "🀫";
+  }
+
+  if (!CanvasRenderingContext2D.prototype.roundRect) {
+    CanvasRenderingContext2D.prototype.roundRect = function(x,y,w,h,r){
+      this.beginPath();
+      this.moveTo(x+r, y);
+      this.lineTo(x+w-r, y);
+      this.quadraticCurveTo(x+w, y, x+w, y+r);
+      this.lineTo(x+w, y+h-r);
+      this.quadraticCurveTo(x+w, y+h, x+w-r, y+h);
+      this.lineTo(x+r, y+h);
+      this.quadraticCurveTo(x, y+h, x, y+h-r);
+      this.lineTo(x, y+r);
+      this.quadraticCurveTo(x, y, x+r, y);
+      this.closePath();
+    };
+  }
+
+  function drawEmojiTile(tile, x, y) {
+    ctx.fillStyle = "#ffffff";
+    ctx.strokeStyle = "#000000";
+    ctx.lineWidth = 2;
+    ctx.roundRect(x, y, TILE_W, TILE_H, 4);
+    ctx.fill();
+    ctx.stroke();
+
+    const emoji = emojiForTile(tile);
+    ctx.font = "32px Segoe UI Emoji, Noto Color Emoji, Apple Color Emoji, sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillStyle = "#000000";
+    ctx.fillText(emoji, x + TILE_W / 2, y + TILE_H / 2);
+  }
+
+  function renderTable() {
+    ctx.fillStyle = "#006020";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "18px Arial";
+    ctx.textAlign = "left";
+    ctx.fillText("Click a tile emoji to discard. Win check is simplified.", 20, 30);
+
+    const startX = 100;
+    const y = canvas.height - TILE_H - 20;
+
+    state.playerHand.forEach((tile, i) => {
+      const x = startX + i * (TILE_W + 4);
+      drawEmojiTile(tile, x, y);
+    });
+
+    if (state.won) {
+      ctx.fillStyle = "rgba(0,0,0,0.6)";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = "#ffff00";
+      ctx.font = "48px Arial";
+      ctx.textAlign = "center";
+      ctx.fillText("WIN!", canvas.width / 2, canvas.height / 2);
+      ctx.font = "24px Arial";
+      ctx.fillText("Tai: " + state.tai, canvas.width / 2, canvas.height / 2 + 40);
+    }
+  }
+
+  const levelLabel = document.getElementById("level");
+  const xpLabel = document.getElementById("xp");
+  const achievementsList = document.getElementById("achievements-list");
+
+  canvas.addEventListener("click", evt => {
+    if (state.won) return;
+
+    const rect = canvas.getBoundingClientRect();
+    const x = evt.clientX - rect.left;
+    const y = evt.clientY - rect.top;
+
+    const startX = 100;
+    const handY = canvas.height - TILE_H - 20;
+    if (y < handY || y > handY + TILE_H) return;
+
+    const index = Math.floor((x - startX) / (TILE_W + 4));
+    if (index < 0 || index >= state.playerHand.length) return;
+
+    discardTile(state, index);
+    checkWin(state);
+
+    if (state.won) {
+      handleWin();
+    } else {
+      drawTile(state);
+      checkWin(state);
+      if (state.won) handleWin();
     }
 
-    function updateAchievements() {
-        const achievementContainer = document.getElementById('achievements');
-        achievementContainer.innerHTML = achievements.join('<br>');
-    }
+    renderTable();
+  });
 
-    window.onload = initGame;
+  document.getElementById("btn-next-hand").addEventListener("click", () => {
+    state = createInitialState();
+    drawTile(state);
+    updateUI();
+    renderTable();
+  });
+
+  function handleWin() {
+    const xpGain = state.tai * 20;
+    levelSystem.addXp(xpGain);
+    const unlocked = achievementsState.checkAfterHand({
+      won: state.won,
+      tai: state.tai,
+      selfDraw: state.selfDraw,
+      flowers: state.flowers
+    });
+    updateUI(unlocked);
+    updateAchievementsPage(unlocked);
+  }
+
+  function updateUI(unlockedList) {
+    levelLabel.textContent = levelSystem.level;
+    xpLabel.textContent = levelSystem.xp;
+    if (unlockedList) {
+      achievementsList.innerHTML = "";
+      unlockedList.forEach(name => {
+        const li = document.createElement("li");
+        li.textContent = name;
+        achievementsList.appendChild(li);
+      });
+    }
+  }
+
+  function updateAchievementsPage(unlockedList) {
+    const lis = document.querySelectorAll("#achievements-page-list li");
+    lis.forEach(li => {
+      const name = li.textContent.split("–")[0].trim();
+      if (unlockedList.includes(name)) {
+        li.style.color = "#ffff00";
+      }
+    });
+  }
+
+  state = createInitialState();
+  drawTile(state);
+  updateUI();
+  renderTable();
 </script>
 
 </body>
