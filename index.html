@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Taiwanese Mahjong – Single Page</title>
+  <title>Taiwanese Mahjong – With Bots</title>
   <style>
     body {
       margin: 0;
@@ -92,15 +92,13 @@
 <section id="home-section" class="active">
   <h1>Taiwanese Mahjong</h1>
   <p>
-    Welcome! This is a simple browser mahjong demo with 16-tile hands,
-    a basic level system, and a few achievements.
+    Play against 3 robots. You only see <strong>one</strong> of your tiles;
+    the rest are blank. Bots get smarter as your level rises, and you can
+    level up or level down based on wins and losses.
   </p>
   <p>
-    Go to the <strong>Game</strong> tab to play. Click a tile emoji to discard,
-    the game will draw and check for a basic winning hand shape.
-  </p>
-  <p>
-    The <strong>Achievements</strong> tab shows what you have unlocked so far.
+    Go to the <strong>Game</strong> tab to start. Click a tile at the bottom
+    to discard; click above your hand to change which tile is visible.
   </p>
 </section>
 
@@ -109,6 +107,8 @@
     <div id="ui">
       <div>Level: <span id="level">1</span></div>
       <div>XP: <span id="xp">0</span></div>
+      <div>Hands Played: <span id="hands-played">0</span></div>
+      <div>Wins: <span id="wins">0</span></div>
       <div>Achievements:</div>
       <ul id="achievements-list"></ul>
       <button id="btn-next-hand">Next Hand</button>
@@ -119,20 +119,23 @@
 
 <section id="achievements-section">
   <h2>Achievements</h2>
-  <p>These are the achievements you can earn while playing:</p>
+  <p>These are the achievements you can earn:</p>
   <ul id="achievements-page-list">
-    <li><strong>First Win</strong> – Win your first hand.</li>
-    <li><strong>Big Hand</strong> – Win a hand with a high tai score (placeholder).</li>
-    <li><strong>Self Draw</strong> – Win by drawing the winning tile yourself.</li>
-    <li><strong>Flower Power</strong> – Win with many flower tiles.</li>
+    <li><strong>First Win</strong> – Win your very first hand.</li>
+    <li><strong>Big Hand</strong> – Win a hand with high tai (placeholder logic).</li>
+    <li><strong>Self Draw</strong> – Win by drawing your own winning tile.</li>
+    <li><strong>Flower Power</strong> – Win with 4+ flowers in your hand.</li>
+    <li><strong>Three in a Row</strong> – Win 3 hands in a row.</li>
+    <li><strong>Ten Wins</strong> – Win 10 total hands.</li>
+    <li><strong>Persistent</strong> – Play 20 hands total.</li>
+    <li><strong>Comeback Kid</strong> – Win a hand after losing 3 in a row.</li>
+    <li><strong>Solo Vision</strong> – Win a hand while only one tile was visible.</li>
   </ul>
-  <p>
-    When you unlock something, it appears here and in the in‑game panel.
-  </p>
+  <p>Unlocked achievements will highlight in yellow.</p>
 </section>
 
 <script>
-  // ---------- Simple page navigation ----------
+  // ---------- Page navigation ----------
   const navHome = document.getElementById("nav-home");
   const navGame = document.getElementById("nav-game");
   const navAchievements = document.getElementById("nav-achievements");
@@ -161,7 +164,7 @@
   navGame.addEventListener("click", () => setActivePage("game"));
   navAchievements.addEventListener("click", () => setActivePage("achievements"));
 
-  // ---------- Mahjong game logic (same as before) ----------
+  // ---------- Mahjong + bots ----------
   const SUITS = ["dots", "bams", "craks"];
   const RANKS = [1,2,3,4,5,6,7,8,9];
   const WINDS = ["east", "south", "west", "north"];
@@ -235,7 +238,7 @@
       if (rank <= 7) {
         const k2 = suit + (rank + 1);
         const k3 = suit + (rank + 2);
-        if (counts[k2] > 0 && counts[k3] > 0) {
+        if ((counts[k2] || 0) > 0 && (counts[k3] || 0) > 0) {
           const backup = Object.assign({}, counts);
           counts[k]--; counts[k2]--; counts[k3]--;
           [k,k2,k3].forEach(key => { if (counts[key] === 0) delete counts[key]; });
@@ -247,66 +250,184 @@
     return false;
   }
 
+  // ---- Level system with level up and level down ----
   const levelSystem = {
     level: 1,
     xp: 0,
-    xpForNextLevel() { return 100 * this.level; },
+    xpForNextLevel(level = this.level) {
+      return 100 * level; // 100, 200, 300, ...
+    },
+    xForFullLevel(level) {
+      return this.xpForNextLevel(level);
+    },
     addXp(amount) {
       this.xp += amount;
-      while (this.xp >= this.xpForNextLevel()) this.level++;
+
+      // Level up
+      while (this.xp >= this.xpForNextLevel(this.level)) {
+        this.xp -= this.xpForNextLevel(this.level);
+        this.level++;
+      }
+
+      // Level down (not below 1)
+      while (this.xp < 0 && this.level > 1) {
+        this.level--;
+        this.xp += this.xForFullLevel(this.level);
+      }
+
+      // Clamp at level 1
+      if (this.level === 1 && this.xp < 0) this.xp = 0;
     }
+  };
+
+  const stats = {
+    handsPlayed: 0,
+    wins: 0,
+    currentStreak: 0,
+    loseStreak: 0
   };
 
   const achievementsState = {
     unlocked: new Set(),
     checkAfterHand(info) {
-      const { won, tai, selfDraw, flowers } = info;
-      if (won && !this.unlocked.has("First Win")) this.unlocked.add("First Win");
-      if (won && tai >= 8 && !this.unlocked.has("Big Hand")) this.unlocked.add("Big Hand");
-      if (selfDraw && !this.unlocked.has("Self Draw")) this.unlocked.add("Self Draw");
-      if (flowers >= 4 && !this.unlocked.has("Flower Power")) this.unlocked.add("Flower Power");
+      const { playerWon, tai, selfDraw, flowersVisibleRule } = info;
+
+      if (playerWon && !this.unlocked.has("First Win")) this.unlocked.add("First Win");
+      if (playerWon && tai >= 8 && !this.unlocked.has("Big Hand")) this.unlocked.add("Big Hand");
+      if (playerWon && selfDraw && !this.unlocked.has("Self Draw")) this.unlocked.add("Self Draw");
+      if (playerWon && flowersVisibleRule && !this.unlocked.has("Flower Power")) this.unlocked.add("Flower Power");
+      if (stats.currentStreak >= 3 && !this.unlocked.has("Three in a Row")) this.unlocked.add("Three in a Row");
+      if (stats.wins >= 10 && !this.unlocked.has("Ten Wins")) this.unlocked.add("Ten Wins");
+      if (stats.handsPlayed >= 20 && !this.unlocked.has("Persistent")) this.unlocked.add("Persistent");
+      if (playerWon && stats.loseStreak >= 3 && !this.unlocked.has("Comeback Kid")) this.unlocked.add("Comeback Kid");
+      if (playerWon && !this.unlocked.has("Solo Vision")) this.unlocked.add("Solo Vision");
+
       return Array.from(this.unlocked);
     }
   };
 
+  // state.players = [player, bot1, bot2, bot3]
   let state;
 
   function createInitialState() {
     const wall = buildWall();
-    const playerHand = [];
-    for (let i = 0; i < 16; i++) playerHand.push(wall.pop());
+    const players = [];
+    for (let i = 0; i < 4; i++) players.push([]);
+
+    // 16 tiles each
+    for (let n = 0; n < 16; n++) {
+      for (let p = 0; p < 4; p++) {
+        players[p].push(wall.pop());
+      }
+    }
+
+    // dealer (player 0) draws one extra
+    players[0].push(wall.pop());
+
     return {
       wall,
-      playerHand,
+      players,
       discards: [],
-      won: false,
-      tai: 0,
-      selfDraw: false,
-      flowers: 0
+      currentPlayer: 0,
+      winner: null,
+      winnerIsPlayer: false,
+      tai: 0
     };
   }
 
-  function drawTile(state) {
+  function drawTileForPlayer(state, playerIndex) {
     if (!state.wall.length) return;
-    state.playerHand.push(state.wall.pop());
+    state.players[playerIndex].push(state.wall.pop());
   }
 
-  function discardTile(state, index) {
-    const [tile] = state.playerHand.splice(index, 1);
-    state.discards.push(tile);
+  function discardTileForPlayer(state, playerIndex, tileIndex) {
+    const [tile] = state.players[playerIndex].splice(tileIndex, 1);
+    state.discards.push({ tile, from: playerIndex });
   }
 
   function computeSimpleTai() { return 5; }
 
-  function checkWin(state) {
-    if (isBasicWin(state.playerHand)) {
-      state.won = true;
+  function checkWinForPlayer(state, playerIndex) {
+    const hand = state.players[playerIndex];
+    if (isBasicWin(hand)) {
+      state.winner = playerIndex;
+      state.winnerIsPlayer = (playerIndex === 0);
       state.tai = computeSimpleTai();
-      state.selfDraw = true;
-      state.flowers = state.playerHand.filter(t => t.kind === "flower").length;
     }
   }
 
+  // ---- Bot evaluation and difficulty (uses levelSystem.level) ----
+  function evaluateTileForBot(tile, hand) {
+    if (tile.kind === "wind" || tile.kind === "dragon") {
+      return 3;
+    }
+    if (tile.kind === "suit") {
+      const r = tile.value.rank;
+      if (r >= 4 && r <= 6) return 3;
+      if (r === 1 || r === 9) return 1;
+      return 2;
+    }
+    if (tile.kind === "flower") {
+      return 0;
+    }
+    return 1;
+  }
+
+  function chooseDiscardIndexForBot(hand, difficulty) {
+    if (hand.length === 0) return 0;
+
+    if (difficulty <= 0) {
+      return Math.floor(Math.random() * hand.length);
+    }
+
+    const scores = hand.map(t => evaluateTileForBot(t, hand));
+    let worstIndexes = [];
+    let maxScore = -Infinity;
+    let minScore = Infinity;
+
+    scores.forEach((s, i) => {
+      if (s > maxScore) maxScore = s;
+      if (s < minScore) minScore = s;
+    });
+
+    const bestIndexes = scores.map((s, i) => (s === maxScore ? i : null)).filter(i => i !== null);
+    worstIndexes = scores.map((s, i) => (s === minScore ? i : null)).filter(i => i !== null);
+
+    if (difficulty === 1) {
+      const candidates = scores.map((s, i) => (s < maxScore ? i : null))
+                               .filter(i => i !== null);
+      if (candidates.length > 0) {
+        return candidates[Math.floor(Math.random() * candidates.length)];
+      }
+      return worstIndexes[Math.floor(Math.random() * worstIndexes.length)];
+    }
+
+    return worstIndexes[Math.floor(Math.random() * worstIndexes.length)];
+  }
+
+  function botTurn(state, botIndex) {
+    if (state.winner !== null) return;
+
+    let difficulty = 0;
+    if (levelSystem.level >= 3 && levelSystem.level <= 4) difficulty = 1;
+    if (levelSystem.level >= 5) difficulty = 2;
+
+    drawTileForPlayer(state, botIndex);
+    checkWinForPlayer(state, botIndex);
+    if (state.winner !== null) return;
+
+    const hand = state.players[botIndex];
+    const discardIndex = chooseDiscardIndexForBot(hand, difficulty);
+    discardTileForPlayer(state, botIndex, discardIndex);
+  }
+
+  function fullRoundFromPlayer(state) {
+    for (let i = 1; i < 4 && state.winner === null; i++) {
+      botTurn(state, i);
+    }
+  }
+
+  // ---------- Rendering ----------
   const canvas = document.getElementById("canvas");
   const ctx = canvas.getContext("2d");
 
@@ -357,7 +478,9 @@
     };
   }
 
-  function drawEmojiTile(tile, x, y) {
+  let visibleIndex = 0;
+
+  function drawTileRect(x, y, showEmoji, tile) {
     ctx.fillStyle = "#ffffff";
     ctx.strokeStyle = "#000000";
     ctx.lineWidth = 2;
@@ -365,12 +488,14 @@
     ctx.fill();
     ctx.stroke();
 
-    const emoji = emojiForTile(tile);
-    ctx.font = "32px Segoe UI Emoji, Noto Color Emoji, Apple Color Emoji, sans-serif";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillStyle = "#000000";
-    ctx.fillText(emoji, x + TILE_W / 2, y + TILE_H / 2);
+    if (showEmoji && tile) {
+      const emoji = emojiForTile(tile);
+      ctx.font = "32px Segoe UI Emoji, Noto Color Emoji, Apple Color Emoji, sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillStyle = "#000000";
+      ctx.fillText(emoji, x + TILE_W / 2, y + TILE_H / 2);
+    }
   }
 
   function renderTable() {
@@ -380,83 +505,141 @@
     ctx.fillStyle = "#ffffff";
     ctx.font = "18px Arial";
     ctx.textAlign = "left";
-    ctx.fillText("Click a tile emoji to discard. Win check is simplified.", 20, 30);
+    ctx.fillText("You vs 3 bots. Only ONE of your tiles is visible. Level can go up or down.", 20, 30);
 
+    const botYPositions = [120, 220, 320];
+    for (let b = 1; b < 4; b++) {
+      const hand = state.players[b];
+      const y = botYPositions[b-1];
+      ctx.fillStyle = "#ffffff";
+      ctx.font = "16px Arial";
+      ctx.fillText("Bot " + b, 20, y + TILE_H / 2);
+      const startX = 100;
+      hand.forEach((_, i) => {
+        const x = startX + i * (TILE_W + 2);
+        drawTileRect(x, y, false, null);
+      });
+    }
+
+    const playerHand = state.players[0];
     const startX = 100;
-    const y = canvas.height - TILE_H - 20;
-
-    state.playerHand.forEach((tile, i) => {
+    const y = canvas.height - TILE_H - 40;
+    playerHand.forEach((tile, i) => {
       const x = startX + i * (TILE_W + 4);
-      drawEmojiTile(tile, x, y);
+      drawTileRect(x, y, i === visibleIndex, tile);
     });
 
-    if (state.won) {
+    ctx.strokeStyle = "#ffff00";
+    ctx.lineWidth = 2;
+    const hx = startX + visibleIndex * (TILE_W + 4);
+    const hy = y;
+    ctx.strokeRect(hx - 2, hy - 2, TILE_W + 4, TILE_H + 4);
+
+    if (state.winner !== null) {
       ctx.fillStyle = "rgba(0,0,0,0.6)";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
       ctx.fillStyle = "#ffff00";
       ctx.font = "48px Arial";
       ctx.textAlign = "center";
-      ctx.fillText("WIN!", canvas.width / 2, canvas.height / 2);
-      ctx.font = "24px Arial";
-      ctx.fillText("Tai: " + state.tai, canvas.width / 2, canvas.height / 2 + 40);
+      const msg = state.winnerIsPlayer ? "YOU WIN!" : "BOT " + state.winner + " WINS";
+      ctx.fillText(msg, canvas.width / 2, canvas.height / 2);
+      if (state.winnerIsPlayer) {
+        ctx.font = "24px Arial";
+        ctx.fillText("Tai: " + state.tai, canvas.width / 2, canvas.height / 2 + 40);
+      }
     }
   }
 
+  // ---------- UI + interaction ----------
   const levelLabel = document.getElementById("level");
   const xpLabel = document.getElementById("xp");
   const achievementsList = document.getElementById("achievements-list");
+  const handsPlayedLabel = document.getElementById("hands-played");
+  const winsLabel = document.getElementById("wins");
 
   canvas.addEventListener("click", evt => {
-    if (state.won) return;
+    if (state.winner !== null) return;
 
     const rect = canvas.getBoundingClientRect();
     const x = evt.clientX - rect.left;
     const y = evt.clientY - rect.top;
 
+    const playerHand = state.players[0];
+    const handY = canvas.height - TILE_H - 40;
     const startX = 100;
-    const handY = canvas.height - TILE_H - 20;
-    if (y < handY || y > handY + TILE_H) return;
 
-    const index = Math.floor((x - startX) / (TILE_W + 4));
-    if (index < 0 || index >= state.playerHand.length) return;
-
-    discardTile(state, index);
-    checkWin(state);
-
-    if (state.won) {
-      handleWin();
-    } else {
-      drawTile(state);
-      checkWin(state);
-      if (state.won) handleWin();
+    if (y >= handY && y <= handY + TILE_H) {
+      const index = Math.floor((x - startX) / (TILE_W + 4));
+      if (index >= 0 && index < playerHand.length) {
+        discardTileForPlayer(state, 0, index);
+        fullRoundFromPlayer(state);
+        if (state.winner !== null) {
+          endHand();
+        } else {
+          drawTileForPlayer(state, 0);
+          if (visibleIndex >= state.players[0].length) visibleIndex = state.players[0].length - 1;
+        }
+        renderTable();
+        return;
+      }
     }
 
-    renderTable();
+    if (y < handY) {
+      if (playerHand.length > 0) {
+        visibleIndex = (visibleIndex + 1) % playerHand.length;
+        renderTable();
+      }
+    }
   });
 
   document.getElementById("btn-next-hand").addEventListener("click", () => {
-    state = createInitialState();
-    drawTile(state);
-    updateUI();
-    renderTable();
+    startNewHand();
   });
 
-  function handleWin() {
-    const xpGain = state.tai * 20;
-    levelSystem.addXp(xpGain);
-    const unlocked = achievementsState.checkAfterHand({
-      won: state.won,
-      tai: state.tai,
-      selfDraw: state.selfDraw,
-      flowers: state.flowers
-    });
-    updateUI(unlocked);
-    updateAchievementsPage(unlocked);
+  function endHand() {
+    stats.handsPlayed++;
+
+    if (state.winnerIsPlayer) {
+      stats.wins++;
+      stats.currentStreak++;
+      stats.loseStreak = 0;
+
+      const xpGain = state.tai * 20;
+      levelSystem.addXp(xpGain);
+
+      const unlocked = achievementsState.checkAfterHand({
+        playerWon: true,
+        tai: state.tai,
+        selfDraw: true,
+        flowersVisibleRule: true
+      });
+      updateUI(unlocked);
+      updateAchievementsPage(unlocked);
+    } else {
+      stats.currentStreak = 0;
+      stats.loseStreak++;
+
+      // XP penalty that can cause level down
+      const basePenalty = 15;
+      const penalty = basePenalty + (levelSystem.level - 1) * 5;
+      levelSystem.addXp(-penalty);
+
+      updateUI();
+    }
+  }
+
+  function startNewHand() {
+    state = createInitialState();
+    visibleIndex = 0;
+    updateUI();
+    renderTable();
   }
 
   function updateUI(unlockedList) {
     levelLabel.textContent = levelSystem.level;
     xpLabel.textContent = levelSystem.xp;
+    handsPlayedLabel.textContent = stats.handsPlayed;
+    winsLabel.textContent = stats.wins;
     if (unlockedList) {
       achievementsList.innerHTML = "";
       unlockedList.forEach(name => {
@@ -477,10 +660,7 @@
     });
   }
 
-  state = createInitialState();
-  drawTile(state);
-  updateUI();
-  renderTable();
+  startNewHand();
 </script>
 
 </body>
